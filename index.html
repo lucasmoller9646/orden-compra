@@ -720,9 +720,13 @@ input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and
         <div class="doc-grupo" id="docs-cotas"></div>
       </div>
       <div class="card stack">
-        <div class="section-title"><span class="dot"></span><h3>Datos bancarios del proveedor</h3></div>
-        <div id="bancos-list" class="stack"></div>
-        <button class="btn" type="button" id="btn-add-banco">＋ Agregar otra cuenta</button>
+        <div class="section-title"><span class="dot"></span><h3>Datos para pago</h3></div>
+        <label class="f"><span class="req">¿Cómo se paga?</span><div class="seg" id="seg-pago-medio"><button type="button" data-v="transferencia">🏦 Transferencia</button><button type="button" data-v="cheque">🧾 Cheque</button></div></label>
+        <div class="hint hidden" id="pago-cheque-hint">Se paga con cheque: no hace falta cargar ninguna cuenta.</div>
+        <div class="stack hidden" id="wrap-bancos">
+          <div id="bancos-list" class="stack"></div>
+          <button class="btn" type="button" id="btn-add-banco">＋ Agregar otra cuenta</button>
+        </div>
         <datalist id="bancos-dl"></datalist>
       </div>
       <div class="card stack" id="card-ia">
@@ -749,13 +753,12 @@ input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and
       <div class="card stack hidden" id="pago-panel">
         <h3>Pago</h3>
         <div class="hint" id="pago-detalle"></div>
-        <div class="row" id="pago-acciones"><button class="btn" type="button" id="btn-pago-actualizar">↻ Consultar estado</button></div>
+        <div class="row" id="pago-acciones"><button class="btn" type="button" id="btn-pago-actualizar">↻ Consultar estado</button><a class="btn ok hidden" id="pago-doc" target="_blank" rel="noopener">📄 Autorización firmada</a></div>
       </div>
       <button class="btn primary big" id="btn-enviar-pago">📤 Enviar a pago<span class="sub" id="pago-sub"></span></button>
-      <div class="row hidden" id="aut-acciones"><button class="btn primary" type="button" id="btn-autorizar">✅ Autorizar pago</button><button class="btn" type="button" id="btn-devolver" style="border-color:var(--bad);color:var(--bad)">↩ Devolver</button></div>
+      <div class="row hidden" id="aut-acciones" aria-hidden="true"><button class="btn primary" type="button" id="btn-autorizar">✅ Autorizar pago</button><button class="btn" type="button" id="btn-devolver">↩ Devolver</button></div>
       <div class="msg hidden" id="done-msg"></div>
       <details class="archivos" open><summary>📎 Archivos</summary><div class="files" id="done-files"></div></details>
-      <button class="btn" id="btn-share-pdf">📄 Compartir PDF (WhatsApp, correo…)</button>
       <button class="btn ghost" id="btn-wa-texto">💬 Copiar resumen para WhatsApp</button>
       <div class="row">
         <button class="btn ghost" id="btn-edit-rec">✎ Editar</button>
@@ -938,7 +941,7 @@ const LOGO_PDF_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAaIAAAB4CAYAAACw2faSAACLZklEQVR42u
    Construido sobre el app "Registro de manejo" (misma base: PWA sin conexión, IndexedDB + autoguardado,
    copia en la nube, contraseñas de 4 números verificadas por el servidor, PDF con pdf-lib, mapa OSM).
    ===================================================================================================== */
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.5.0';
 const ESQUEMA = 'compras-ypoti/1';
 const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzpJMDSnuFe7jQjVYM7pqa-Q1Jnydm21VRosUvgcLKhAv8DFrDMRrV5ih-A9sLAhXX0Tg/exec'; // URL /exec del servidor (Apps Script) · ver README
 const EMPRESA = { razon_social:'RURAL BIOENERGIA S.A.', ruc:'80050418-6', ruc_base:'80050418' };
@@ -1075,18 +1078,18 @@ const TRANSPORTISTAS = {
   'Cerro Porã': { empresa:'Cerro Porã', nombre:'Hugo Paniagua', cargo:'Responsable de flete', tel:'0981 295007' }
 };
 const telIntl = t => '595'+String(t||'').replace(/\D/g,'').replace(/^0/,'');
-function nuevoBanco(){ return {id:uuid(), titular:'', entidad:'', cuenta:'', moneda:'GS', doc_tipo:'RUC', doc:'', alias:''}; }
+function nuevoBanco(){ return {id:uuid(), titular:'', entidad:'', cuenta:'', moneda:'GS', doc_tipo:'RUC', doc:''}; }
 function nuevaOrden(){ return { comisionista: sesion&&!esAdmin()?sesion.nombre:'', comisionista_otro:'', proveedor:'', categoria:'', cantidad:'', fecha:todayISO(), hora:nowHM(), localidad:'', ubicacion:null, carimbo:'', sola_marca:'', raza:'',
   precio_modo:'kg', kg_modo:'simple', rangos:[{desde:'0', hasta:'', precio:''}], precio:'', pesos:[], peso_est:'',
   destino:'', km:'', km_fuente:'', km_detalle:'', ruta:null, retorno:'no', flete:{prov:'', otro:'', precio:'', viajes:'', cab_camion:'', auto:true, viajes_auto:true},
   com_modo:'', com_tasa:'', cambio:(cfg.cambio||''), obs:'',
-  docs:{facturas:[], guias:[], cotas:[]}, bancos:[nuevoBanco()] }; }
+  docs:{facturas:[], guias:[], cotas:[]}, pago_medio:'', bancos:[nuevoBanco()] }; }
 let F=nuevaOrden(), w=null, formId=null, pagina=1, dirty=false, autoOff=false, autoEnCurso=false, colaGuardado=Promise.resolve();
 function enCola(fn){ const p=colaGuardado.then(()=>fn()); colaGuardado=p.catch(()=>{}); return p; }
 function formActivo(){ return $('scr-form').classList.contains('active'); }
 /* campos simples: id del input -> clave en F */
 const FIELDS={ 'f-proveedor':'proveedor','f-categoria':'categoria','f-cantidad':'cantidad','f-fecha':'fecha','f-hora':'hora','f-localidad':'localidad','f-carimbo':'carimbo','f-precio':'precio','f-peso-est':'peso_est','f-destino':'destino','f-km':'km','f-flete-otro':'flete.otro','f-flete-precio':'flete.precio','f-flete-viajes':'flete.viajes','f-cab-camion':'flete.cab_camion','f-com-tasa':'com_tasa','f-cambio':'cambio','f-obs':'obs' };
-const SEGS={ 'seg-kg-modo':'kg_modo', 'seg-sola-marca':'sola_marca','seg-raza':'raza','seg-retorno':'retorno','seg-flete':'flete.prov','seg-precio-modo':'precio_modo','seg-com-modo':'com_modo' };
+const SEGS={ 'seg-pago-medio':'pago_medio', 'seg-kg-modo':'kg_modo', 'seg-sola-marca':'sola_marca','seg-raza':'raza','seg-retorno':'retorno','seg-flete':'flete.prov','seg-precio-modo':'precio_modo','seg-com-modo':'com_modo' };
 const getP=(o,p)=>p.split('.').reduce((a,k)=>a==null?a:a[k],o);
 const setP=(o,p,v)=>{ const ks=p.split('.'); let a=o; ks.slice(0,-1).forEach(k=>{ if(a[k]==null) a[k]={}; a=a[k]; }); a[ks[ks.length-1]]=v; };
 function destinoCod(){ const e=estancia(F.destino); return e?e.cod:''; }
@@ -1100,6 +1103,7 @@ function migrarForm(f){ f=f||nuevaOrden(); const base=nuevaOrden();
   if(!f.docs){ f.docs={facturas:[], guias:[], cotas:[]}; if(f.foto_factura) f.docs.facturas.push({id:uuid(), foto:f.foto_factura}); (f.guias||[]).forEach(g=>{ if(g.foto) f.docs.guias.push({id:uuid(), foto:g.foto}); if(g.cota_foto) f.docs.cotas.push({id:uuid(), foto:g.cota_foto}); }); }
   ['facturas','guias','cotas'].forEach(k=>{ if(!Array.isArray(f.docs[k])) f.docs[k]=[]; });
   if(!Array.isArray(f.bancos)||!f.bancos.length){ const b=f.banco; f.bancos=[Object.assign(nuevoBanco(), b||{})]; }
+  if(f.pago_medio===undefined) f.pago_medio = f.bancos.some(b=>(b.titular||'').trim()||(b.cuenta||'').trim()) ? 'transferencia' : '';
   delete f.foto_factura; delete f.guias; delete f.foto_animales; delete f.banco; delete f.factura_nro; delete f.cabezas;
   return f; }
 
@@ -1322,18 +1326,19 @@ function renderDocs(){ DOC_TIPOS.forEach(t=>{ const box=$('docs-'+t.k); const li
       th.querySelector('button').addEventListener('click',()=>{ if(!confirm('¿Quitar la foto de '+t.uno.toLowerCase()+' '+(i+1)+'?')) return; lista.splice(i,1); dirty=true; iaInvalidar(); renderDocs(); }); g.appendChild(th); }); box.appendChild(g); }
   const row=document.createElement('div'); row.className='row'; row.innerHTML='<button class="btn" type="button" data-cam>📷 '+(lista.length?'Otra ':'')+t.uno.toLowerCase()+'</button><button class="btn" type="button" data-gal>🖼 Galería</button>'; const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.multiple=true; inp.style.display='none';
   row.querySelector('[data-cam]').addEventListener('click',()=>{ inp.setAttribute('capture','environment'); inp.multiple=false; inp.click(); }); row.querySelector('[data-gal]').addEventListener('click',()=>{ inp.removeAttribute('capture'); inp.multiple=true; inp.click(); });
-  inp.addEventListener('change',async e=>{ const fs=Array.from(e.target.files||[]); e.target.value=''; let n=0; for(const f of fs){ try{ lista.push({id:uuid(), foto:await compressImage(f,2000,0.85)}); n++; }catch(err){ toast(err.message); } } if(n){ dirty=true; iaInvalidar(); renderDocs(); toast(n===1?t.uno+' cargada':n+' fotos cargadas'); } });
+  inp.addEventListener('change',async e=>{ const fs=Array.from(e.target.files||[]); e.target.value=''; let n=0; for(const f of fs){ try{ lista.push({id:uuid(), foto:await compressImage(f,2000,0.85)}); n++; }catch(err){ toast(err.message); } } if(n){ dirty=true; iaInvalidar(); renderDocs(); programarIA(2500); toast(n===1?t.uno+' cargada':n+' fotos cargadas'+(docsOkDe(F)&&navigator.onLine?' · la IA verifica sola':'')); } });
   box.appendChild(row); box.appendChild(inp); }); }
 
 /* ---------- cuentas bancarias (una o varias) ---------- */
 function bancoCompleto(b){ return !!(b && (b.titular||'').trim() && (b.entidad||'').trim() && (b.cuenta||'').trim() && (b.doc||'').trim()); }
-function renderBancos(){ const box=$('bancos-list'); box.innerHTML='';
+function renderPagoMedio(){ const t=F.pago_medio==='transferencia', ch=F.pago_medio==='cheque'; $('wrap-bancos').classList.toggle('hidden',!t); $('pago-cheque-hint').classList.toggle('hidden',!ch); }
+function renderBancos(){ renderPagoMedio(); const box=$('bancos-list'); box.innerHTML='';
   F.bancos.forEach((b,i)=>{ const d=document.createElement('div'); d.className='banco-bloque'; d.innerHTML='<div class="head"><span>Cuenta '+(i+1)+'</span>'+(F.bancos.length>1?'<button class="btn small danger" type="button" data-del>✕ Quitar</button>':'')+'</div>'
       +'<label class="f"><span class="req">Titular de la cuenta</span><input type="text" data-k="titular" autocomplete="off" placeholder="Como figura en el banco"></label>'
       +'<label class="f"><span class="req">Banco / entidad</span><input type="text" data-k="entidad" autocomplete="off" list="bancos-dl" placeholder="Ej.: ueno bank, Itaú, BNF…"></label>'
       +'<div class="row"><label class="f"><span class="req">Nº de cuenta</span><input type="text" data-k="cuenta" inputmode="text" autocomplete="off"></label><label class="f"><span>Moneda</span><select data-k="moneda"><option value="GS">Guaraníes (₲)</option><option value="USD">Dólares (US$)</option></select></label></div>'
       +'<div class="row"><label class="f"><span class="req">Documento</span><select data-k="doc_tipo"><option value="RUC">RUC</option><option value="CI">Cédula</option><option value="Otro">Otro</option></select></label><label class="f"><span class="req">Número</span><input type="text" data-k="doc" inputmode="text" autocomplete="off" placeholder="Ej.: 80002149-5"></label></div>'
-      +'<label class="f"><span>Alias (si el banco lo usa)</span><input type="text" data-k="alias" autocomplete="off" placeholder="Opcional"></label>';
+      ;
     d.querySelectorAll('[data-k]').forEach(el=>{ el.value=b[el.dataset.k]||''; const h=()=>{ b[el.dataset.k]=el.value; dirty=true; if(['titular','doc','doc_tipo'].includes(el.dataset.k)) iaInvalidar(); }; el.addEventListener('input',h); el.addEventListener('change',h); });
     const del=d.querySelector('[data-del]'); if(del) del.addEventListener('click',()=>{ if(!confirm('¿Quitar la cuenta '+(i+1)+'?')) return; F.bancos.splice(i,1); dirty=true; iaInvalidar(); renderBancos(); });
     box.appendChild(d); }); }
@@ -1351,9 +1356,13 @@ function renderVideo(){ const v=w&&w.video; $('video-lim').textContent=VIDEO_MAX
 
 /* ---------- verificación IA (facturas + guías + COTAs + cuentas) ---------- */
 function iaHashDe(F){ const h=du=>(du||'').length+':'+(du||'').slice(-40); const d=F.docs||{facturas:[],guias:[],cotas:[]}; const c=calc(F); const e=estancia(F.destino);
-  return [d.facturas.map(x=>h(x.foto)).join('|'), d.guias.map(x=>h(x.foto)).join('|'), d.cotas.map(x=>h(x.foto)).join('|'), F.proveedor, F.destino, e?e.cod:'', c.cab, Math.round(c.pagar), (F.bancos||[]).map(b=>[b.titular,b.doc_tipo,b.doc].join('/')).join('|'), F.fecha].join('§'); }
+  return [d.facturas.map(x=>h(x.foto)).join('|'), d.guias.map(x=>h(x.foto)).join('|'), d.cotas.map(x=>h(x.foto)).join('|'), F.proveedor, F.destino, e?e.cod:'', c.cab, Math.round(c.pagar), bancosPago(F).map(b=>[b.titular,b.doc_tipo,b.doc].join('/')).join('|'), F.fecha].join('§'); }
+const bancosPago = f => f.pago_medio==='transferencia' ? (f.bancos||[]) : [];
 function iaHash(){ return iaHashDe(F); }
-function iaInvalidar(){ if(w&&w.ia&&w.ia.estado!=='pendiente'){ w.ia={estado:'pendiente', resultado:w.ia.resultado||null, hash:null}; } renderIA(); }
+function iaInvalidar(){ if(w&&w.ia&&w.ia.estado!=='pendiente'){ w.ia={estado:'pendiente', resultado:w.ia.resultado||null, hash:null}; } renderIA(); programarIA(6000); }
+/* verificación automática: con las tres fotos cargadas y señal, la IA corre sola unos segundos después del último cambio (sin tocar ningún botón) */
+let iaAutoT=null;
+function programarIA(ms){ clearTimeout(iaAutoT); iaAutoT=setTimeout(async()=>{ if(!formActivo()||!w||!formId||!navigator.onLine||!iaFotosOk()) return; const est=iaEstado(); if(!['pendiente','error_servicio'].includes(est)) return; if(iaEnCurso){ programarIA(5000); return; } try{ await enCola(()=>saveDraft(true)); }catch(e){ return; } verificarIA(formId,false); }, ms==null?3000:ms); }
 function iaFotosOk(){ return docsOkDe(F); }
 function iaEstado(){ if(!w||!w.ia) return iaFotosOk()?'pendiente':'sin_fotos'; if(!iaFotosOk()) return 'sin_fotos'; if(w.ia.hash && w.ia.hash!==iaHash() && w.ia.estado!=='verificando') return 'pendiente'; return w.ia.estado||'pendiente'; }
 function renderIA(){ if(!w) return; const est=iaEstado(); const b=$('ia-badge'); b.className='badge '+(IA_CLS[est]||''); b.textContent=IA_LABEL[est]||est; const box=$('ia-checks'); box.innerHTML=''; const ex=$('ia-extraido'); ex.classList.add('hidden'); ex.innerHTML='';
@@ -1377,7 +1386,7 @@ async function verificarIA(id, manual){ const w0=await dbGet(id); if(!w0||!w0.fo
   if(!navigator.onLine){ if(manual) toast('Sin señal: la verificación se hace sola cuando vuelva la conexión.'); return false; } if(iaEnCurso) return false; iaEnCurso=true;
   const hash=iaHashDe(f); const c=calc(f); const b64of=du=>du.split(',')[1];
   await enCola(async()=>{ const x=await dbGet(id); if(x){ x.ia=Object.assign({},x.ia||{},{estado:'verificando'}); await dbPut(x); } }); if(w&&w.id===id){ w.ia=Object.assign({},w.ia||{},{estado:'verificando'}); renderIA(); }
-  try{ const body={ tipo:'verificar_ia', version:2, id, datos:{ proveedor:f.proveedor, comisionista:f.comisionista||'', destino:f.destino, destino_codigo:(estancia(f.destino)||{}).cod||'', cantidad:c.cab, total:Math.round(c.pagar), facturar:(facturacion(f)||{fa:{}}).fa.total||null, precio_modo:f.precio_modo, precio:num(f.precio), fecha:f.fecha, bancos:f.bancos },
+  try{ const body={ tipo:'verificar_ia', version:2, id, datos:{ proveedor:f.proveedor, comisionista:f.comisionista||'', destino:f.destino, destino_codigo:(estancia(f.destino)||{}).cod||'', cantidad:c.cab, total:Math.round(c.pagar), facturar:(facturacion(f)||{fa:{}}).fa.total||null, precio_modo:f.precio_modo, precio:num(f.precio), fecha:f.fecha, medio_pago:f.pago_medio||'', bancos:bancosPago(f) },
       facturas:f.docs.facturas.map(d=>b64of(d.foto)), guias:f.docs.guias.map(d=>b64of(d.foto)), cotas:f.docs.cotas.map(d=>b64of(d.foto)) };
     const j=await post(body,{timeout:180000}); const res=j.ia||{};
     await enCola(async()=>{ const x=await dbGet(id); if(!x) return; x.ia={estado:res.estado||'error_servicio', resultado:res, hash, verificado_en:new Date().toISOString()}; logEntry(x,'verificación IA: '+(res.estado||'?'), res.resumen||null); x.nube=Object.assign({},x.nube||{},{pendiente:true}); await dbPut(x); if(w&&w.id===id){ w.ia=x.ia; } });
@@ -1423,7 +1432,7 @@ Object.keys(FIELDS).forEach(id=>{ const el=$(id); const h=()=>{ setP(F, FIELDS[i
 $('f-comisionista').addEventListener('input',()=>{ if($('f-comisionista').readOnly) return; F.comisionista=$('f-comisionista').value.trim(); dirty=true; sugerirComisionistas(); });
 $('f-comisionista').addEventListener('focus',()=>{ if(!$('f-comisionista').readOnly){ sugerirComisionistas(); if(esAdmin() && navigator.onLine && !(usuarios.intermediarios||[]).length) cargarIntermediarios(true).then(sugerirComisionistas); } });
 $('f-comisionista').addEventListener('blur',()=>setTimeout(()=>$('com-sug').classList.add('hidden'),150));
-Object.keys(SEGS).forEach(id=>{ if(id==='seg-flete') return; $(id).addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; setP(F, SEGS[id], b.dataset.v); setSeg($(id), b.dataset.v); dirty=true; if(id==='seg-retorno') renderFlete(); if(id==='seg-precio-modo'||id==='seg-kg-modo'){ renderPrecioModo(); renderPesos(); iaInvalidar(); } if(id==='seg-com-modo'){ renderComModo(); renderTotales(); if(F.com_modo!=='sin') setTimeout(()=>$('f-com-tasa').focus(),50); } }); });
+Object.keys(SEGS).forEach(id=>{ if(id==='seg-flete') return; $(id).addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; setP(F, SEGS[id], b.dataset.v); setSeg($(id), b.dataset.v); dirty=true; if(id==='seg-retorno') renderFlete(); if(id==='seg-pago-medio'){ renderPagoMedio(); iaInvalidar(); } if(id==='seg-precio-modo'||id==='seg-kg-modo'){ renderPrecioModo(); renderPesos(); iaInvalidar(); } if(id==='seg-com-modo'){ renderComModo(); renderTotales(); if(F.com_modo!=='sin') setTimeout(()=>$('f-com-tasa').focus(),50); } }); });
 
 /* ---------- validación: datos obligatorios ---------- */
 function faltantesDe(f){ f=migrarForm(f); const out=[]; const add=(p,campo,titulo)=>out.push({pagina:p, campo, titulo}); const c=calc(f);
@@ -1439,7 +1448,8 @@ function faltantesDe(f){ f=migrarForm(f); const out=[]; const add=(p,campo,titul
   if(!f.com_modo) add(1,'com_modo','Forma de la comisión'); else if(f.com_modo!=='sin' && !(num(f.com_tasa)>0)) add(1,'com_tasa','Monto de la comisión');
   if(!(num(f.cambio)>0)) add(1,'cambio','Cambio del día (₲ por US$)');
   const d=f.docs; if(!d.facturas.length) add(2,'facturas','Foto de la factura'); if(!d.guias.length) add(2,'guias','Foto de la guía de traslado'); if(!d.cotas.length) add(2,'cotas','Foto de la COTA'); else if(d.cotas.length<d.guias.length) add(2,'cotas','Foto de la COTA de cada guía ('+d.cotas.length+' COTAs para '+d.guias.length+' guías)');
-  f.bancos.forEach((b,i)=>{ const n=f.bancos.length>1?' (cuenta '+(i+1)+')':''; if(!(b.titular||'').trim()) add(2,'bco_titular_'+i,'Titular de la cuenta'+n); if(!(b.entidad||'').trim()) add(2,'bco_entidad_'+i,'Banco / entidad'+n); if(!(b.cuenta||'').trim()) add(2,'bco_cuenta_'+i,'Nº de cuenta'+n); if(!(b.doc||'').trim()) add(2,'bco_doc_'+i,'Documento del titular'+n); });
+  if(!f.pago_medio) add(2,'pago_medio','Datos para pago: transferencia o cheque');
+  if(f.pago_medio==='transferencia') f.bancos.forEach((b,i)=>{ const n=f.bancos.length>1?' (cuenta '+(i+1)+')':''; if(!(b.titular||'').trim()) add(2,'bco_titular_'+i,'Titular de la cuenta'+n); if(!(b.entidad||'').trim()) add(2,'bco_entidad_'+i,'Banco / entidad'+n); if(!(b.cuenta||'').trim()) add(2,'bco_cuenta_'+i,'Nº de cuenta'+n); if(!(b.doc||'').trim()) add(2,'bco_doc_'+i,'Documento del titular'+n); });
   return out; }
 function faltantesActual(){ return faltantesOrden({form:F, video:w&&w.video}); }
 function faltantesOrden(x){ const f=formDe(x); f._tiene_video=!!x.video; const r=faltantesDe(f); delete f._tiene_video; return r; }
@@ -1456,7 +1466,7 @@ async function pintarAutosave(){ const el=$('autosave'); if(!el||!w) return; con
 function resetForm(){ F=nuevaOrden(); pagina=1; dirty=false; autoOff=false; $('edit-banner').classList.add('hidden'); $('err1').classList.add('hidden'); $('err2').classList.add('hidden'); }
 async function nueva(){ resetForm(); formId=uuid(); const ahora=new Date().toISOString(); w={id:formId, esquema:ESQUEMA, creado_en:ahora, actualizado_en:ahora, creado_por:sesion?sesion.nombre:null, rol_creador:sesion?sesion.rol:null, comisionista:F.comisionista, form:F, video:null, ia:{estado:'pendiente'}, pago:null, version:1, historial:[], nube:{pendiente:false}}; applyForm(); renderPagina(); show('scr-form'); pintarAutosave(); traerCambio(); setTimeout(()=>{ if(!$('f-cantidad').value) $('f-proveedor').focus(); },100); }
 async function abrir(x){ resetForm(); formId=x.id; w=x; F=migrarForm(JSON.parse(JSON.stringify(x.form||nuevaOrden()))); w.form=F;
-  const bn=$('edit-banner'); if(x.pago&&x.pago.enviado_en){ bn.className='msg warn'; const decid=x.pago.decision&&x.pago.decision.estado; bn.textContent='Esta orden ya fue enviada a pago'+(decid?' y '+(decid==='autorizada'?'autorizada':'devuelta')+' por '+x.pago.decision.admin:'')+'. '+(puedeAutorizar()&&!decid?'Puede corregir lo que haga falta: al autorizar desde el app se guardan los cambios (PDF nuevo, planilla y correos).':decid==='autorizada'?'Si la modifica, la planilla de compras se actualiza sola con la copia en la nube; reenvíela para avisar por correo.':'Si la modifica, hay que volver a enviarla: Pedro y Mauricio reciben el aviso.'); bn.classList.remove('hidden'); }
+  const bn=$('edit-banner'); if(x.pago&&x.pago.enviado_en){ bn.className='msg warn'; const decid=x.pago.decision&&x.pago.decision.estado; bn.textContent='Esta orden ya fue enviada a pago'+(decid?' y '+(decid==='autorizada'?'autorizada':'devuelta')+' por '+x.pago.decision.admin:'')+'. '+(puedeAutorizar()&&!decid?'Puede corregir lo que haga falta y tocar «Enviar a pago»: llega el correo nuevo con el PDF corregido y se autoriza desde ese enlace.':decid==='autorizada'?'Si la modifica, la planilla de compras se actualiza sola con la copia en la nube; reenvíela para avisar por correo.':'Si la modifica, hay que volver a enviarla: Pedro y Mauricio reciben el aviso.'); bn.classList.remove('hidden'); }
   if(x.ajena){ const prev=bn.classList.contains('hidden')?'':' '+bn.textContent; bn.className='msg'+(prev?' warn':''); bn.textContent='Orden de '+(x.comisionista||x.creado_por||'otro usuario')+' (recuperada de la nube): los cambios se guardan con su nombre.'+prev; bn.classList.remove('hidden'); }
   applyForm(); renderPagina(); show('scr-form'); pintarAutosave(); if(!num(F.cambio)) traerCambio(); }
 function renderPagina(){ $('pag1').style.display = pagina===1?'':'none'; $('pag2').style.display = pagina===2?'':'none'; const st=$('steps'); st.innerHTML = '<span class="done"></span><span class="'+(pagina===2?'done':'')+'"></span><b>'+pagina+' / 2 · '+(pagina===1?'Datos operativos':'Documentación y pago')+'</b>';
@@ -1476,7 +1486,7 @@ function buildRecord(x){ const f=formDe(x); const c=calc(f); const e=estancia(f.
     comision:{ modo:f.com_modo, tasa:num(f.com_tasa), descripcion:comDesc(f), total:Math.round(c.com), iva10:Math.round(c.iva10) },
     totales:{ pagar:Math.round(c.pagar), iva5:Math.round(c.iva5), por_cabeza:Math.round(c.por_animal), por_kg:Math.round(c.por_kg), puesto_total:Math.round(c.puesto), puesto_cabeza:Math.round(c.puesto_cab), puesto_kg:Math.round(c.puesto_kg), usd:c.usd },
     facturacion:fx, observaciones:f.obs||'', documentos:dl, factura_nro:dl.facturas_nro, guias_nro:dl.guias_nro, cotas_nro:dl.cotas_nro, guias:dl.guias.map(g=>({numero:g.numero})),
-    bancos:f.bancos.map(b=>({titular:b.titular, entidad:b.entidad, cuenta:b.cuenta, moneda:b.moneda, doc_tipo:b.doc_tipo, doc:b.doc, alias:b.alias})), banco:Object.assign({},f.bancos[0]||{}),
+    medio_pago:f.pago_medio||'', bancos:bancosPago(f).map(b=>({titular:b.titular, entidad:b.entidad, cuenta:b.cuenta, moneda:b.moneda, doc_tipo:b.doc_tipo, doc:b.doc})), banco:Object.assign({},bancosPago(f)[0]||{}),
     video:x.video?{nombre:x.video.nombre, tamano:x.video.tamano, url:x.video.url||null, estado:x.video.estado}:null,
     ia:{ estado:iaE.estado||'pendiente', verificado_en:iaE.verificado_en||null, resultado:iaE.resultado||null }, pago:x.pago||null, faltantes:falt, cantidad_faltantes:falt.length, historial:x.historial||[] }; }
 function fileNames(r){ const base='orden_compra_'+slug(r.proveedor||'proveedor')+'_'+(r.fecha||'sin_fecha')+'_'+r.id.slice(0,8)+(r.version>1?'_v'+r.version:''); return {json:base+'.json', pdf:base+'.pdf'}; }
@@ -1484,6 +1494,7 @@ async function buildFiles(x){ const r=buildRecord(x); const n=fileNames(r); cons
 function b64(bytes){ let s=''; const chunk=0x8000; for(let i=0;i<bytes.length;i+=chunk) s+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunk)); return btoa(s); }
 function download(file){ const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=file.name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },4000); }
 async function saveFile(file){ download(file); return 'saved'; }
+async function compartirPdf(file){ try{ if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file]}); return 'shared'; } }catch(e){ if(e.name==='AbortError') return 'cancel'; } return saveFile(file); }
 async function openPdf(file){ const u=URL.createObjectURL(file); const win=window.open(u,'_blank'); if(!win) return saveFile(file); return 'opened'; }
 function resumenWA(r){ const t=r.totales; let s='*ORDEN DE COMPRA DE GANADO — GRUPO YPOTI*\n'+ESTADO_LABEL[r.estado_orden].toUpperCase()+'\n\n'; s+='Proveedor: '+(r.proveedor||'-')+' · '+(r.categoria||'-')+' · '+r.cabezas+' cabezas\nComisionista: '+(r.comisionista||'-')+'\nLocalidad: '+(r.localidad||'-')+'\nFecha: '+fmtDate(r.fecha)+' '+(r.hora||'')+' · Destino: '+(r.destino||'-')+(r.destino_codigo?' (cód. '+r.destino_codigo+')':'')+'\n';
   if(r.ubicacion) s+='Corral: https://www.google.com/maps?q='+r.ubicacion.lat+','+r.ubicacion.lon+'\n'; if(r.km) s+='Distancia: '+fmt(r.km,1)+' km · Flete: '+r.flete.transportadora+' '+gs(r.flete.precio_viaje)+' × '+r.flete.viajes+' = '+gs(r.flete.total)+'\n';
@@ -1499,21 +1510,21 @@ function badgeIA(x){ const est = !docsOkDe(formDe(x)) ? 'sin_fotos' : (x.ia&&x.i
 function renderDoneStatus(x){ const st=$('done-status'); st.innerHTML=''; [badgeEstado(x), badgeIA(x)].forEach(([cls,txt])=>{ const b=document.createElement('span'); b.className=cls; b.textContent=txt; st.appendChild(b); }); if(x.video){ const b=document.createElement('span'); b.className='badge '+(x.video.estado==='subido'?'ok':'pend'); b.textContent=x.video.estado==='subido'?'🎥 video en Drive':'🎥 video por subir'; st.appendChild(b); }
   const n=x.nube||{}; const b=document.createElement('span'); b.className='badge '+(n.subido_en&&!n.pendiente?'ok':'pend'); b.textContent = n.subido_en&&!n.pendiente ? '☁ copia en la nube '+hhmm(n.subido_en) : '☁ copia pendiente'; st.appendChild(b);
   const lg=$('done-log'); const h=x.historial||[]; if(h.length){ lg.classList.remove('hidden'); lg.innerHTML=''; h.slice(-8).forEach(e=>{ const d=document.createElement('div'); d.textContent=fmtDT(e.fecha)+' · '+(e.usuario?e.usuario+' · ':'')+e.accion+(e.detalle?' — '+e.detalle:''); lg.appendChild(d); }); } else lg.classList.add('hidden'); }
-function renderPagoPanel(x){ const p=$('pago-panel'); const pg=x.pago; if(!pg||!pg.enviado_en){ p.classList.add('hidden'); return; } p.classList.remove('hidden'); const d=pg.decision; let t='Enviada a pago el '+fmtDT(pg.enviado_en)+(pg.enviado_por?' por '+pg.enviado_por:'')+'. ';
+function renderPagoPanel(x){ const p=$('pago-panel'); const pg=x.pago; if(!pg||!pg.enviado_en){ p.classList.add('hidden'); return; } p.classList.remove('hidden'); const d=pg.decision; const doc=$('pago-doc'); const u=d&&d.estado==='autorizada'&&d.url_autorizacion; doc.classList.toggle('hidden',!u); if(u) doc.href=u; let t='Enviada a pago el '+fmtDT(pg.enviado_en)+(pg.enviado_por?' por '+pg.enviado_por:'')+'. ';
   if(d&&d.estado){ t+= (d.estado==='autorizada'?'✅ Pago autorizado':'↩ Devuelta con observaciones')+' por '+d.admin+' el '+fmtDT(d.decidido_en)+'. '; if(d.estado==='autorizada'){ t+='Forma de pago: '+(d.forma==='contado'?'contado · urgencia '+(d.urgencia||'-')+(d.fecha_limite?' · pagar hasta '+fmtDate(d.fecha_limite):''):'a plazo · '+(d.plazo_dias?d.plazo_dias+' días':'')+(d.fecha_plazo?' · fecha '+fmtDate(d.fecha_plazo):''))+'. '; if(d.fila_planilla) t+='Fila '+d.fila_planilla+' de la planilla de compras. '; if(d.asana_url) t+='Tarea en Asana creada. '; } if(d.obs) t+='Observaciones: '+d.obs; }
   else t+='Esperando la autorización de Pedro o Mauricio.'; $('pago-detalle').textContent=t; }
-function renderDoneKv(x){ const r=buildRecord(x); const t=r.totales; const kv=$('done-kv'); kv.innerHTML=''; const rows=[['Proveedor',r.proveedor],['Categoría',r.categoria],['Comisionista',r.comisionista],['Fecha',fmtDate(r.fecha)+' '+(r.hora||'')],['Localidad',r.localidad],['Destino',(r.destino||'')+(r.destino_codigo?' · cód. '+r.destino_codigo:'')],['Cabezas / peso',r.cabezas+' cab. · prom. '+(r.peso_promedio_kg!=null?fmt(r.peso_promedio_kg,1)+' kg':'—')+(r.precio_modo==='kg'?' ('+r.pesados+' pesados)':' (estimado)')],['Total',t.pagar?gs(t.pagar)+(t.usd&&t.usd.total!=null?' · '+usd(t.usd.total):''):'—'],['Por cabeza',t.por_cabeza?gs(t.por_cabeza)+(t.usd&&t.usd.cab!=null?' · '+usd(t.usd.cab):''):'—'],['Comisión',r.comision.total?gs(r.comision.total)+' ('+r.comision.descripcion+')':comDesc(x.form)],['Flete',r.flete.total?r.flete.transportadora+' · '+gs(r.flete.total):(r.flete.transportadora||'—')],['Puesto en estancia',t.puesto_cabeza?gs(t.puesto_cabeza)+'/cab · '+gs(t.puesto_kg)+'/kg':'—'],['Factura(s)',r.factura_nro||(r.documentos.fotos.facturas+' foto(s), sin leer')],['Guía(s)',r.guias_nro||(r.documentos.fotos.guias+' foto(s), sin leer')],['COTA(s)',r.cotas_nro||(r.documentos.fotos.cotas+' foto(s), sin leer')],['Cuenta(s)',r.bancos.filter(b=>b.titular).map(b=>b.titular+' · '+b.entidad+' · '+b.cuenta).join(' | ')||'—']];
+function renderDoneKv(x){ const r=buildRecord(x); const t=r.totales; const kv=$('done-kv'); kv.innerHTML=''; const rows=[['Proveedor',r.proveedor],['Categoría',r.categoria],['Comisionista',r.comisionista],['Fecha',fmtDate(r.fecha)+' '+(r.hora||'')],['Localidad',r.localidad],['Destino',(r.destino||'')+(r.destino_codigo?' · cód. '+r.destino_codigo:'')],['Cabezas / peso',r.cabezas+' cab. · prom. '+(r.peso_promedio_kg!=null?fmt(r.peso_promedio_kg,1)+' kg':'—')+(r.precio_modo==='kg'?' ('+r.pesados+' pesados)':' (estimado)')],['Total',t.pagar?gs(t.pagar)+(t.usd&&t.usd.total!=null?' · '+usd(t.usd.total):''):'—'],['Por cabeza',t.por_cabeza?gs(t.por_cabeza)+(t.usd&&t.usd.cab!=null?' · '+usd(t.usd.cab):''):'—'],['Comisión',r.comision.total?gs(r.comision.total)+' ('+r.comision.descripcion+')':comDesc(x.form)],['Flete',r.flete.total?r.flete.transportadora+' · '+gs(r.flete.total):(r.flete.transportadora||'—')],['Puesto en estancia',t.puesto_cabeza?gs(t.puesto_cabeza)+'/cab · '+gs(t.puesto_kg)+'/kg':'—'],['Factura(s)',r.factura_nro||(r.documentos.fotos.facturas+' foto(s), sin leer')],['Guía(s)',r.guias_nro||(r.documentos.fotos.guias+' foto(s), sin leer')],['COTA(s)',r.cotas_nro||(r.documentos.fotos.cotas+' foto(s), sin leer')],['Datos para pago',r.medio_pago==='cheque'?'Cheque':r.medio_pago==='transferencia'?('Transferencia · '+(r.bancos.filter(b=>b.titular).map(b=>b.titular+' · '+b.entidad+' · '+b.cuenta).join(' | ')||'—')):'—']];
   rows.forEach(([k,v])=>{ const dt=document.createElement('dt'); dt.textContent=k; const dd=document.createElement('dd'); dd.textContent=v||'—'; kv.appendChild(dt); kv.appendChild(dd); }); return r; }
 async function openDone(x){ doneW=x; doneFiles=null; show('scr-done'); const r=renderDoneKv(x); renderDoneStatus(x); renderPagoPanel(x); $('done-msg').classList.add('hidden');
   const fl=$('done-falt'); if(r.faltantes.length){ fl.classList.remove('hidden'); fl.innerHTML='<b>Borrador: faltan '+r.faltantes.length+' datos obligatorios.</b><ul class="falt-list">'+r.faltantes.map(f=>'<li>'+esc(f.titulo)+'</li>').join('')+'</ul>'; } else fl.classList.add('hidden');
   const iaEst=(x.ia&&x.ia.estado)||'pendiente'; const puede = !r.faltantes.length; const btn=$('btn-enviar-pago'); btn.disabled=!puede; const yaEnv=x.pago&&x.pago.enviado_en; btn.innerHTML=(yaEnv?'📤 Reenviar a pago (actualizada)':'📤 Enviar a pago')+'<span class="sub" id="pago-sub"></span>';
   $('pago-sub').textContent = !puede ? 'Complete los datos obligatorios' : iaEst==='ok' ? 'Verificación IA correcta · avisa a Pedro y Mauricio para autorizar' : iaEst==='advertencias' ? 'La IA tiene advertencias: revíselas antes de enviar' : iaEst==='errores' ? 'La IA encontró diferencias: corrija o justifique' : 'Falta la verificación IA (se hace con señal)';
   pintarAutorizar(x, r);
-  const files=$('done-files'); files.innerHTML='<div class="msg">Generando PDF…</div>'; ['btn-share-pdf'].forEach(id=>$(id).disabled=true);
+  const files=$('done-files'); files.innerHTML='<div class="msg">Generando PDF…</div>'; 
   try{ doneFiles=await buildFiles(x); }catch(e){ files.innerHTML='<div class="msg bad">No se pudo generar el PDF: '+esc(e.message)+'</div>'; return; }
-  if(doneW!==x) return; files.innerHTML=''; [['PDF',doneFiles.pdfFile],['JSON',doneFiles.jsonFile]].forEach(([k,f])=>{ const d=document.createElement('div'); d.className='file'; d.innerHTML='<span class="ico">'+k+'</span><span class="name"></span><span class="size">'+fmtBytes(f.size)+'</span>'; d.querySelector('.name').textContent=f.name; const a=document.createElement('a'); a.href='#'; a.textContent=k==='PDF'?'Ver':'Guardar'; a.addEventListener('click',ev=>{ ev.preventDefault(); if(k==='PDF') openPdf(f); else saveFile(f); }); d.appendChild(a); files.appendChild(d); });
-  $('btn-share-pdf').disabled=false; }
-$('btn-share-pdf').addEventListener('click',async()=>{ if(!doneFiles) return; const data={files:[doneFiles.pdfFile], title:'Orden de compra · '+(doneFiles.r.proveedor||''), text:resumenWA(doneFiles.r).slice(0,900)}; try{ if(navigator.share&&navigator.canShare&&navigator.canShare(data)){ await navigator.share(data); return; } }catch(e){ if(e.name==='AbortError') return; } await saveFile(doneFiles.pdfFile); toast('PDF guardado: adjúntelo en WhatsApp.'); });
+  if(doneW!==x) return; files.innerHTML=''; { const f=doneFiles.pdfFile; const d=document.createElement('div'); d.className='file'; d.innerHTML='<span class="ico">PDF</span><span class="name"></span><span class="size">'+fmtBytes(f.size)+'</span>'; d.querySelector('.name').textContent=f.name;
+    const ver=document.createElement('a'); ver.href='#'; ver.textContent='Ver'; ver.addEventListener('click',ev=>{ ev.preventDefault(); openPdf(f); }); d.appendChild(ver);
+    const comp=document.createElement('a'); comp.href='#'; comp.textContent='Compartir'; comp.style.marginLeft='12px'; comp.addEventListener('click',ev=>{ ev.preventDefault(); compartirPdf(f); }); d.appendChild(comp); files.appendChild(d); } }
 $('btn-wa-texto').addEventListener('click',()=>{ if(!doneW) return; const t=resumenWA(buildRecord(doneW)); navigator.clipboard.writeText(t).then(()=>toast('Resumen copiado: péguelo en WhatsApp.')).catch(()=>{ const u='https://wa.me/?text='+encodeURIComponent(t); window.open(u,'_blank'); }); });
 $('btn-edit-rec').addEventListener('click',()=>{ if(doneW) abrir(doneW); });
 $('btn-delete-rec').addEventListener('click',async()=>{ if(!doneW) return; const x=doneW; if(x.pago&&x.pago.enviado_en){ toast('Ya fue enviada a pago: queda guardada (no se puede borrar).'); return; } if(!confirm('¿Borrar esta orden? Se borra del teléfono y de la nube.')) return; await dbDel(x.id); borrarNube(x.id); toast('Orden borrada'); renderHome(); show('scr-home'); });
@@ -1537,7 +1548,7 @@ async function traerCambio(){ if(!navigator.onLine) return; try{ const j=await p
 let swipeAbierto=null;
 function envolverSwipe(item, x){ const wrap=document.createElement('div'); wrap.className='swipe'; const acts=document.createElement('div'); acts.className='acts';
   const mk=(cls,ico,txt,fn)=>{ const bt=document.createElement('button'); bt.type='button'; bt.className=cls; bt.innerHTML='<i></i><span></span>'; bt.querySelector('i').textContent=ico; bt.querySelector('span').textContent=txt; bt.addEventListener('click',ev=>{ ev.stopPropagation(); cerrarSwipe(); fn(); }); acts.appendChild(bt); };
-  mk('a-pdf','📄','PDF',async()=>{ const y=await completa(x); if(!y) return; toast('Generando PDF…'); try{ const f=await buildFiles(y); await openPdf(f.pdfFile); }catch(e){ toast('No se pudo generar el PDF: '+e.message); } }); mk('a-edit','✎','Editar',async()=>{ const y=await completa(x); if(y) abrir(y); }); mk('a-del','🗑','Borrar',async()=>{ const env=!!(x.pago&&x.pago.enviado_en); if(env){ toast('Ya fue enviada a pago: queda guardada (no se puede borrar).'); return; } if(!confirm('¿Borrar esta orden? Se borra del teléfono y de la nube.')) return; await dbDel(x.id); borrarNube(x.id); toast('Borrada'); renderHome(); });
+  mk('a-pdf','📄','PDF',async()=>{ const y=await completa(x); if(!y) return; toast('Generando PDF…'); try{ const f=await buildFiles(y); await compartirPdf(f.pdfFile); }catch(e){ toast('No se pudo generar el PDF: '+e.message); } }); mk('a-edit','✎','Editar',async()=>{ const y=await completa(x); if(y) abrir(y); }); mk('a-del','🗑','Borrar',async()=>{ const env=!!(x.pago&&x.pago.enviado_en); if(env){ toast('Ya fue enviada a pago: queda guardada (no se puede borrar).'); return; } if(!confirm('¿Borrar esta orden? Se borra del teléfono y de la nube.')) return; await dbDel(x.id); borrarNube(x.id); toast('Borrada'); renderHome(); });
   wrap.appendChild(acts); wrap.appendChild(item); const ancho=()=>acts.children.length*66; let sx=0,sy=0,dx=0,moviendo=false,horizontal=null,abiertoAlEmpezar=false; const setX=v=>{ item.style.transform='translateX('+v+'px)'; };
   item.addEventListener('pointerdown',e=>{ sx=e.clientX; sy=e.clientY; dx=0; moviendo=true; horizontal=null; abiertoAlEmpezar=(swipeAbierto===wrap); wrap.classList.add('dragging'); });
   item.addEventListener('pointermove',e=>{ if(!moviendo) return; const mx=e.clientX-sx, my=e.clientY-sy; if(horizontal===null){ if(Math.abs(mx)<6&&Math.abs(my)<6) return; horizontal=Math.abs(mx)>Math.abs(my); if(!horizontal){ moviendo=false; wrap.classList.remove('dragging'); return; } try{ item.setPointerCapture(e.pointerId); }catch(z){} } dx=mx; const base=abiertoAlEmpezar?-ancho():0; setX(Math.max(-ancho()-20, Math.min(0, base+dx))); });
@@ -1639,14 +1650,15 @@ async function makePdf(r, x){
   title('COTAs · '+fotos.cotas+(fotos.cotas===1?' foto':' fotos')+(fotos.cotas?'':' · FALTA LA FOTO'));
   (ex.cotas||[]).forEach((c,i)=>{ const n=(ex.cotas.length>1?' '+(i+1):''); kv('COTA'+n, (c.nro||'—')+(c.guia_nro?' · guía '+c.guia_nro:'')+(c.total_animales!=null?' · '+c.total_animales+' animales':'')+(c.validez_hasta?' · válida hasta '+fmtDate(c.validez_hasta):'')+(c.tiene_sello===false?' · SIN SELLO':c.tiene_sello?' · con sello':'')+(c.enmiendas?' · CON ENMIENDAS':'')); if(c.propietario||c.establecimiento_nombre) kv('Origen', (c.propietario||'')+(c.propietario_codigo?' ('+c.propietario_codigo+')':'')+(c.establecimiento_nombre?' · '+c.establecimiento_nombre:'')+(c.establecimiento_codigo?' cód. '+c.establecimiento_codigo:'')+(c.distrito?' · '+c.distrito:'')); if(c.destino_nombre||c.destino_codigo) kv('Destino', (c.destino_nombre||'')+(c.destino_codigo?' · cód. '+c.destino_codigo:'')+(c.consignado_a?' · consignado a '+c.consignado_a:'')); y-=2; });
   if(!(ex.cotas||[]).length && fotos.cotas) kv('Lectura IA', sinLeer, {bold:false});
-  y-=4; title('Datos bancarios para el pago'+((r.bancos||[]).length>1?' · '+r.bancos.length+' cuentas':''));
-  (r.bancos||[]).forEach((b,i)=>{ const n=r.bancos.length>1?' '+(i+1):''; kv('Titular'+n, b.titular); kv('Banco · cuenta', (b.entidad||'—')+' · '+(b.cuenta||'—')+' · '+(b.moneda==='USD'?'US$':'Gs')); kv('Documento', (b.doc_tipo||'')+' '+(b.doc||'—')+(b.alias?' · alias '+b.alias:'')); y-=2; });
+  y-=4; title('Datos para pago'+(r.medio_pago==='transferencia'&&(r.bancos||[]).length>1?' · '+r.bancos.length+' cuentas':''));
+  kv('Forma', r.medio_pago==='cheque'?'Cheque':r.medio_pago==='transferencia'?'Transferencia bancaria':'— (falta elegir transferencia o cheque)');
+  if(r.medio_pago==='transferencia') (r.bancos||[]).forEach((b,i)=>{ const n=r.bancos.length>1?' '+(i+1):''; kv('Titular'+n, b.titular); kv('Banco · cuenta', (b.entidad||'—')+' · '+(b.cuenta||'—')+' · '+(b.moneda==='USD'?'US$':'Gs')); kv('Documento', (b.doc_tipo||'')+' '+(b.doc||'—')); y-=2; });
   y-=4; title('Verificación automática (IA)');
   const estIA=ia.estado||'pendiente'; kv('Estado', IA_LABEL[estIA]||estIA, {color: estIA==='ok'?brand:estIA==='errores'?red:estIA==='advertencias'?amber:grey}); if(ia.verificado_en) kv('Verificada', fmtDT(ia.verificado_en), {bold:false});
   (res.checks||[]).forEach(ch=>{ const ico=ch.estado==='ok'?'OK':ch.estado==='warn'?'AVISO':ch.estado==='bad'?'ERROR':'—'; const lines=wrap(ch.titulo+(ch.detalle?': '+ch.detalle:''),8.5,font,W-M*2-60); need(lines.length*11+4); page.drawText(ico,{x:M,y,size:8,font:bold,color:ch.estado==='ok'?brand:ch.estado==='warn'?amber:ch.estado==='bad'?red:grey}); lines.forEach((l,i)=>page.drawText(l,{x:M+46,y:y-i*11,size:8.5,font,color:ink})); y-=lines.length*11+4; });
   if(res.resumen){ const ln=wrap(res.resumen,8.5,font,W-M*2); need(ln.length*11+4); ln.forEach((l,i)=>page.drawText(l,{x:M,y:y-i*11,size:8.5,font,color:grey})); y-=ln.length*11+6; }
   if(r.pago&&r.pago.justificacion_ia) kv('Justificación', r.pago.justificacion_ia, {bold:false, color:amber});
-  if(r.pago&&r.pago.enviado_en){ y-=4; title('Pago'); kv('Enviada a pago', fmtDT(r.pago.enviado_en)+(r.pago.enviado_por?' por '+r.pago.enviado_por:'')); const dc=r.pago.decision; if(dc&&dc.estado){ kv('Decisión', (dc.estado==='autorizada'?'PAGO AUTORIZADO':'DEVUELTA CON OBSERVACIONES')+' por '+dc.admin+' · '+fmtDT(dc.decidido_en), {color:dc.estado==='autorizada'?brand:red}); if(dc.estado==='autorizada') kv('Forma de pago', dc.forma==='contado'?'Contado · urgencia '+(dc.urgencia||'—')+(dc.fecha_limite?' · pagar hasta '+fmtDate(dc.fecha_limite):''):'A plazo · '+(dc.plazo_dias?dc.plazo_dias+' días':'')+(dc.fecha_plazo?' · '+fmtDate(dc.fecha_plazo):'')); if(dc.obs) kv('Observaciones', dc.obs, {bold:false}); if(dc.hash) kv('Verificación', 'SHA-256 '+dc.hash, {bold:false}); } else kv('Decisión','Pendiente', {bold:false}); }
+  if(r.pago&&r.pago.enviado_en){ y-=4; title('Pago'); kv('Enviada a pago', fmtDT(r.pago.enviado_en)+(r.pago.enviado_por?' por '+r.pago.enviado_por:'')); const dc=r.pago.decision; if(dc&&dc.estado){ kv('Decisión', (dc.estado==='autorizada'?'PAGO AUTORIZADO':'DEVUELTA CON OBSERVACIONES')+' por '+dc.admin+' · '+fmtDT(dc.decidido_en), {color:dc.estado==='autorizada'?brand:red}); if(dc.estado==='autorizada') kv('Forma de pago', dc.forma==='contado'?'Contado · urgencia '+(dc.urgencia||'—')+(dc.fecha_limite?' · pagar hasta '+fmtDate(dc.fecha_limite):''):'A plazo · '+(dc.plazo_dias?dc.plazo_dias+' días':'')+(dc.fecha_plazo?' · '+fmtDate(dc.fecha_plazo):'')); if(dc.obs) kv('Observaciones', dc.obs, {bold:false}); if(dc.hash) kv('Sello de la firma', dc.hash, {bold:false}); if(dc.url_autorizacion) kv('Autorización firmada', dc.url_autorizacion, {bold:false}); } else kv('Decisión','Pendiente', {bold:false}); }
   /* fotos de los documentos: una por fila, al ancho de la hoja, para que se puedan leer */
   const docs=[]; const fd2=(f.docs||{facturas:[],guias:[],cotas:[]}); [['facturas','Factura'],['guias','Guía de traslado'],['cotas','COTA']].forEach(([k,lab])=>fd2[k].forEach((d,i)=>docs.push({du:d.foto, lab:lab+(fd2[k].length>1?' '+(i+1):'')+(ex[k]&&ex[k][i]&&ex[k][i].nro?' · '+ex[k][i].nro:'')})));
   if(docs.length){ if(y-M<400) header('DOCUMENTOS · FOTOS'); else { y-=6; title('Fotos de los documentos'); }
@@ -1706,7 +1718,7 @@ $('btn-enviar-pago').addEventListener('click',()=>{ if(doneW) enviarPago(doneW);
 
 /* ---------- autorizar / devolver desde el app (solo Pedro y Mauricio) ---------- */
 function pintarAutorizar(x, r){ const box=$('aut-acciones'); const dec=x.pago&&x.pago.decision&&x.pago.decision.estado; const env=!!(x.pago&&x.pago.enviado_en);
-  const ver = puedeAutorizar() && !r.faltantes.length && dec!=='autorizada'; box.classList.toggle('hidden',!ver); $('btn-devolver').classList.toggle('hidden', !(ver && env && !dec));
+  const ver = false; /* v1.4: en el app solo "Enviar a pago"; se autoriza con el enlace del correo */ box.classList.toggle('hidden',!ver); $('btn-devolver').classList.toggle('hidden', !(ver && env && !dec));
   $('btn-autorizar').textContent = cambiadaDesdeEnvio(x) ? '✅ Guardar cambios y autorizar' : '✅ Autorizar pago';
   $('btn-enviar-pago').classList.toggle('hidden', ver && env && !dec); }
 function cambiadaDesdeEnvio(x){ const env=x.pago&&x.pago.enviado_en; if(!env) return true; return String(x.guardado_en||x.actualizado_en||'')>String(env); }
