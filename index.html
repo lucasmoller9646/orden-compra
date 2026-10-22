@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Orden de compra de ganado · Ypoti</title>
 <meta name="theme-color" content="#04522B">
 <link rel="manifest" href="manifest.webmanifest">
@@ -482,6 +482,38 @@ header.top .who b{color:var(--brand);font-weight:600}
 .hint b{color:var(--ink-2)}
 .thumb.doc{aspect-ratio:3/4;object-fit:contain;background:var(--surface-2)}
 @media (min-width:600px){ .weights{grid-template-columns:1fr 1fr 1fr} }
+/* ===== v1.1 ===== */
+html,body{max-width:100%;overflow-x:hidden;touch-action:manipulation;-webkit-text-size-adjust:100%}
+input,select,textarea{font-size:17px !important;max-width:100%}
+.row{align-items:flex-end}
+.row > label.f{min-width:0}
+input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;min-height:50px;font-family:var(--font-body);font-size:17px;font-weight:500;color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:12px;text-align:left}
+input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and-time-value{text-align:left;margin:0}
+#mapa-modal .lienzo{touch-action:none}
+#mapa-modal .pin-fijo{position:absolute;left:50%;top:50%;width:40px;height:52px;transform:translate(-50%,-100%);pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+#mapa-modal .pin-fijo.hidden{display:none}
+.doc-grupo{display:flex;flex-direction:column;gap:8px;border:1px dashed var(--line-strong);border-radius:10px;padding:12px}
+.doc-grupo .head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.doc-grupo .head b{font-family:var(--font-display);font-size:15px}
+.doc-grupo .head .badge{flex:none}
+.doc-thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.doc-thumbs .th{position:relative;aspect-ratio:3/4;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--surface-2)}
+.doc-thumbs .th img{width:100%;height:100%;object-fit:cover;display:block}
+.doc-thumbs .th button{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:15px;line-height:28px;padding:0}
+.doc-thumbs .th span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-family:var(--font-mono);font-size:10.5px;padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.banco-bloque{border:1px dashed var(--line-strong);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.banco-bloque .head{display:flex;justify-content:space-between;align-items:center;font-family:var(--font-display);font-weight:700;color:var(--ink-2)}
+.banco-bloque .head .btn{width:auto;flex:0 0 auto}
+.contacto{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 12px;border-radius:10px;background:var(--surface-2);font-size:14px}
+.contacto .q{flex:1 1 180px;min-width:0}
+.contacto .q b{display:block;font-family:var(--font-display)}
+.contacto a{flex:0 0 auto;text-decoration:none;font-weight:700;font-size:14px;padding:8px 12px;border-radius:8px;border:1px solid var(--line-strong);color:var(--ink);background:var(--surface)}
+.contacto a.wa{border-color:#128C7E;color:#128C7E}
+.facturar .ft{font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink-2);margin-bottom:4px}
+.facturar .fl{display:grid;grid-template-columns:minmax(0,46%) 1fr;gap:4px 10px;font-size:13.5px;line-height:1.4}
+.facturar .fl span{color:var(--ink-3)}
+.facturar .fl b{font-family:var(--font-mono);font-weight:600;overflow-wrap:anywhere}
+.pesados-falta{color:var(--warn)}
 
 </style>
 </head>
@@ -541,31 +573,48 @@ header.top .who b{color:var(--brand);font-weight:600}
     <!-- ===== PÁGINA 1: DATOS OPERATIVOS ===== -->
     <div id="pag1" class="stack">
       <div class="card stack">
-        <div class="section-title"><span class="dot"></span><h3>Datos del lote</h3></div>
+        <div class="section-title"><span class="dot"></span><h3>1 · Datos del lote</h3></div>
         <label class="f"><span class="req">Comisionista</span><select id="f-comisionista"></select></label>
         <label class="f hidden" id="wrap-com-otro"><span class="req">Nombre del comisionista</span><input type="text" id="f-comisionista-otro" placeholder="Nombre y apellido" autocomplete="off"></label>
         <label class="f"><span class="req">Proveedor (vendedor)</span><input type="text" id="f-proveedor" placeholder="Nombre como figura en la factura" autocomplete="off"></label>
         <label class="f"><span class="req">Categoría</span>
           <select id="f-categoria"><option value="">Seleccionar…</option><option>Desmamante macho</option><option>Desmamante hembra</option><option>Toretón</option><option>Terneros</option><option>Terneras</option><option>Vaquillas</option><option>Novillos</option><option>Toros</option><option>Vacas</option><option>Otra</option></select></label>
+        <label class="f"><span class="req">Cantidad de animales</span><input type="number" inputmode="numeric" id="f-cantidad" placeholder="Cabezas compradas" min="1"></label>
         <div class="row">
           <label class="f"><span class="req">Fecha</span><input type="date" id="f-fecha"></label>
           <label class="f"><span class="req">Hora de pesaje</span><input type="time" id="f-hora"></label>
         </div>
         <label class="f"><span class="req">Localidad / estancia de origen</span><input type="text" id="f-localidad" placeholder="Ej.: Horqueta · Granja Don Alberto" autocomplete="off"></label>
-        <label class="f"><span class="req">Ubicación del corral</span><span class="hint">Tome la ubicación del teléfono y, si hace falta, ajuste el punto en el mapa.</span></label>
+        <label class="f"><span class="req">Ubicación del corral</span><span class="hint">Tome la ubicación del teléfono o márquela en el mapa (satélite).</span></label>
         <div class="row"><button class="btn" type="button" id="btn-ubic-gps">📡 Usar mi ubicación</button><button class="btn" type="button" id="btn-ubic-mapa">🗺 Marcar en el mapa</button></div>
         <div class="status-line"><span class="badge" id="ubic-badge">Sin ubicación</span><a class="hidden" id="ubic-link" href="#" target="_blank" rel="noopener">Ver en Google Maps</a></div>
-        <label class="f"><span class="req">Carimbo</span><span class="hint">Número o marca con que se carimbaron los animales.</span><input type="text" id="f-carimbo" placeholder="Ej.: 6" autocomplete="off"></label>
+        <label class="f"><span class="req">Carimbo</span><input type="text" id="f-carimbo" placeholder="Número o marca del carimbo" autocomplete="off"></label>
         <label class="f"><span class="req">¿Sola marca?</span><div class="seg" id="seg-sola-marca"><button type="button" data-v="si">Sí</button><button type="button" data-v="no">No</button></div></label>
-        <label class="f"><span class="req">Raza</span><div class="seg" id="seg-raza"><button type="button" data-v="zebu">Zebú</button><button type="button" data-v="hibrido">Híbrido</button></div></label>
-        <div class="photo">
-          <label class="f"><span class="req">Foto de los animales carimbados</span><span class="hint">Va al PDF.</span></label>
-          <img class="thumb" id="thumb-animales" alt="">
-          <div class="row"><button class="btn" type="button" data-cam="animales">📷 Sacar foto</button><button class="btn" type="button" data-gal="animales">🖼 Elegir de la galería</button><button class="btn danger hidden" type="button" id="btn-quitar-animales">✕ Quitar</button></div>
-          <input type="file" id="file-animales" accept="image/*">
+        <label class="f"><span class="req">Raza</span><div class="seg" id="seg-raza"><button type="button" data-v="zebu">Zebú</button><button type="button" data-v="hibrido">Híbrido</button><button type="button" data-v="mezclado">Mezclado</button></div></label>
+      </div>
+
+      <div class="card stack">
+        <div class="section-title"><span class="dot"></span><h3>2 · Negociación</h3></div>
+        <label class="f"><span class="req">Forma de compra</span><div class="seg" id="seg-precio-modo"><button type="button" data-v="kg">₲ por kg vivo</button><button type="button" data-v="cabeza">₲ por cabeza (punta)</button></div></label>
+        <label class="f"><span class="req" id="lbl-precio">Precio por kg vivo (₲)</span><input type="number" inputmode="numeric" id="f-precio" placeholder="0"></label>
+      </div>
+
+      <div class="card stack" id="card-pesaje">
+        <div class="section-title" style="justify-content:space-between"><div style="display:flex;align-items:center;gap:10px"><span class="dot"></span><h3 id="pesaje-titulo">3 · Hoja de pesaje (kg)</h3></div><span class="badge" id="count-badge">0 pesados</span></div>
+        <div id="wrap-hoja" class="stack">
+          <div class="entry"><input type="number" id="peso-input" inputmode="decimal" step="any" placeholder="Peso en kg"><button class="btn primary" id="btn-add" type="button">Agregar</button></div>
+          <div class="entry-info"><span id="last-info">Toque Agregar o Enter tras cada pesada</span><span id="sum-info"></span></div>
+          <div class="weights" id="weights"></div>
         </div>
+        <div id="wrap-peso-est" class="stack hidden">
+          <label class="f"><span class="req">Peso promedio estimado (kg)</span><span class="hint">En la compra por cabeza no se pesa animal por animal: el comisionista estima el peso promedio del lote.</span><input type="number" inputmode="decimal" step="any" id="f-peso-est" placeholder="0"></label>
+        </div>
+      </div>
+
+      <div class="card stack">
+        <div class="section-title"><span class="dot"></span><h3>4 · Video del lote carimbado</h3></div>
         <div class="photo">
-          <label class="f"><span>Video del lote (opcional)</span><span class="hint">Queda en Google Drive; el PDF lleva un botón con cámara que abre el video. Grabe corto (hasta 45 s): el límite es <span id="video-lim"></span>.</span></label>
+          <label class="f"><span class="req">Video de los animales ya carimbados</span><span class="hint">Grábelo al terminar el pesaje. Queda en Google Drive y el PDF lleva un botón con cámara que lo abre. Hasta 45 s (máximo <span id="video-lim"></span>).</span></label>
           <div class="chip hidden" id="video-chip"><b>🎥</b><span id="video-nombre"></span><button type="button" id="btn-quitar-video" aria-label="Quitar video">✕</button></div>
           <div class="msg hidden" id="video-msg"></div>
           <div class="row"><button class="btn" type="button" id="btn-video-cam">🎥 Grabar video</button><button class="btn" type="button" id="btn-video-gal">📁 Elegir video</button></div>
@@ -574,56 +623,41 @@ header.top .who b{color:var(--brand);font-weight:600}
       </div>
 
       <div class="card stack">
-        <div class="section-title"><span class="dot"></span><h3>Destino y flete</h3></div>
+        <div class="section-title"><span class="dot"></span><h3>5 · Destino y flete</h3></div>
         <label class="f"><span class="req">Estancia de destino</span><select id="f-destino"></select><span class="hint" id="destino-cod"></span></label>
-        <label class="f"><span class="req">Distancia por ruta hasta el destino (km)</span>
-          <div class="km-row"><input type="number" inputmode="decimal" step="any" id="f-km" placeholder="km"><button class="btn" type="button" id="btn-km">🛣 Calcular por ruta</button></div>
-          <span class="hint" id="km-status">Con la ubicación del corral y el destino, el app calcula los kilómetros por ruta (no en línea recta). Sin señal, cárguelos a mano.</span></label>
+        <label class="f"><span class="req">Distancia por ruta hasta el destino (km)</span><input type="number" inputmode="decimal" step="any" id="f-km" placeholder="km"></label>
+        <div class="row"><button class="btn" type="button" id="btn-km">🛣 Calcular y ver la ruta</button><button class="btn hidden" type="button" id="btn-ver-ruta">🗺 Ver ruta</button></div>
+        <span class="hint" id="km-status">Con la ubicación del corral y el destino, el app calcula los km por ruta y muestra el camino en el mapa. Si no es coherente, escríbalos a mano.</span>
         <label class="f"><span>¿El camión vuelve cargado?</span><span class="hint">Si hay retorno cargado, el camión se pide siempre a Toro Pampa.</span><div class="seg" id="seg-retorno"><button type="button" data-v="no">No</button><button type="button" data-v="si">Sí, vuelve cargado</button></div></label>
         <div class="card flat stack" id="flete-sug" style="gap:8px"><div class="hint">Cargue los kilómetros para ver la sugerencia de transportadora.</div></div>
         <label class="f"><span class="req">Transportadora</span><div class="seg" id="seg-flete"><button type="button" data-v="Toro Pampa">Toro Pampa</button><button type="button" data-v="Cerro Porã">Cerro Porã</button><button type="button" data-v="Otro">Otro</button></div></label>
+        <div id="flete-contacto"></div>
         <label class="f hidden" id="wrap-flete-otro"><span class="req">Nombre de la transportadora</span><input type="text" id="f-flete-otro" placeholder="Ej.: Flete propio, Robson…" autocomplete="off"></label>
         <div class="row">
-          <label class="f"><span class="req">Precio por viaje (₲)</span><input type="number" inputmode="numeric" id="f-flete-precio" placeholder="0"></label>
-          <label class="f"><span class="req">Cantidad de viajes</span><span class="hint">Camiones / jaulas (≈ 52 animales por viaje).</span><input type="number" inputmode="numeric" id="f-flete-viajes" placeholder="1" min="0"></label>
+          <label class="f"><span class="req">Cabezas por camión</span><input type="number" inputmode="numeric" id="f-cab-camion" placeholder="52" min="1"></label>
+          <label class="f"><span class="req">Cantidad de viajes</span><input type="number" inputmode="numeric" id="f-flete-viajes" placeholder="1" min="0"></label>
         </div>
+        <label class="f"><span class="req">Precio por viaje (₲)</span><input type="number" inputmode="numeric" id="f-flete-precio" placeholder="0"></label>
         <div class="tot-row"><span>Total flete</span><b id="t-flete">—</b></div>
       </div>
 
-      <div class="card stack" id="card-pesaje">
-        <div class="section-title" style="justify-content:space-between"><div style="display:flex;align-items:center;gap:10px"><span class="dot"></span><h3>Pesaje animal por animal (kg)</h3></div><span class="badge" id="count-badge">0 animales</span></div>
-        <label class="f"><span class="req">Forma de precio</span><div class="seg" id="seg-precio-modo"><button type="button" data-v="kg">Por kg</button><button type="button" data-v="cabeza">Por cabeza</button></div></label>
-        <div class="entry"><input type="number" id="peso-input" inputmode="decimal" step="any" placeholder="Peso en kg"><button class="btn primary" id="btn-add" type="button">Agregar</button></div>
-        <div class="entry-info"><span id="last-info">Toque Agregar o Enter tras cada pesada</span><span id="sum-info"></span></div>
-        <div class="weights" id="weights"></div>
-        <div class="row hidden" id="wrap-peso-est">
-          <label class="f"><span class="req">Cantidad de cabezas</span><span class="hint">Si pesó animal por animal, es la cantidad de pesadas.</span><input type="number" inputmode="numeric" id="f-cabezas" placeholder="0" min="0"></label>
-          <label class="f"><span class="req">Peso promedio estimado (kg)</span><span class="hint">Compra por cabeza sin pesar: cargue un promedio estimado para la planilla.</span><input type="number" inputmode="decimal" step="any" id="f-peso-est" placeholder="0"></label>
-        </div>
-      </div>
-
       <div class="card stack">
-        <div class="section-title"><span class="dot"></span><h3>Precio y comisión</h3></div>
-        <div class="row">
-          <label class="f"><span class="req" id="lbl-precio">Precio por kg (₲)</span><input type="number" inputmode="numeric" id="f-precio" placeholder="0"></label>
-          <label class="f"><span class="req">Cambio del día (₲ por US$)</span><span class="hint" id="cambio-hint">Se completa solo con señal; puede corregirlo.</span><input type="number" inputmode="decimal" step="any" id="f-cambio" placeholder="0"></label>
-        </div>
-        <label class="f"><span class="req">Comisión del comisionista</span><div class="seg" id="seg-com-modo"><button type="button" data-v="cab">₲ por cabeza</button><button type="button" data-v="kg">₲ por kg</button><button type="button" data-v="pct">% del total</button><button type="button" data-v="sin">Sin comisión</button></div></label>
-        <label class="f" id="wrap-com-tasa"><span class="req" id="lbl-com-tasa">Monto por cabeza (₲, IVA incluido)</span><input type="number" inputmode="decimal" step="any" id="f-com-tasa" placeholder="0"></label>
+        <div class="section-title"><span class="dot"></span><h3>6 · Comisión</h3></div>
+        <label class="f"><span class="req">Forma de la comisión</span><div class="seg" id="seg-com-modo"><button type="button" data-v="cab">₲ por cabeza</button><button type="button" data-v="pct">% del total</button><button type="button" data-v="sin">Sin comisión</button></div></label>
+        <label class="f hidden" id="wrap-com-tasa"><span class="req" id="lbl-com-tasa">Monto por cabeza (₲, IVA incluido)</span><input type="number" inputmode="decimal" step="any" id="f-com-tasa" placeholder="0"></label>
       </div>
 
       <div class="card stack" id="card-totales">
-        <div class="section-title"><span class="dot"></span><h3>Totales y liquidación</h3></div>
+        <div class="section-title"><span class="dot"></span><h3>7 · Totales y liquidación</h3></div>
+        <label class="f"><span class="req">Cambio del día (₲ por US$)</span><span class="hint" id="cambio-hint">Se completa solo con señal; puede corregirlo.</span><input type="number" inputmode="decimal" step="any" id="f-cambio" placeholder="0"></label>
         <div class="tot-row"><span>Total cabezas</span><b id="t-cab">0</b></div>
-        <div class="tot-row"><span>Peso total</span><b id="t-peso">0 kg</b></div>
+        <div class="tot-row"><span id="t-peso-lbl">Peso total</span><b id="t-peso">0 kg</b></div>
         <div class="tot-row"><span>Peso promedio</span><b id="t-prom">—</b></div>
         <div class="tot-big">
-          <div class="tot-row"><span>Total a pagar (animales)</span><b id="t-pagar">—</b></div>
-          <div class="tot-row"><span>IVA 5 % incluido (total ÷ 21)</span><b id="t-iva5">—</b></div>
+          <div class="tot-row"><span>Total a pagar (animales, IVA incluido)</span><b id="t-pagar">—</b></div>
           <div class="tot-row"><span>Por cabeza</span><b id="t-animal">—</b></div>
           <div class="tot-row"><span>Por kg</span><b id="t-kg">—</b></div>
-          <div class="tot-row"><span>Comisión (<span id="com-rate-txt">sin definir</span>, IVA incl.)</span><b id="t-com">—</b></div>
-          <div class="tot-row"><span>IVA 10 % incluido en la comisión (÷ 11)</span><b id="t-iva10">—</b></div>
+          <div class="tot-row"><span>Comisión (<span id="com-rate-txt">sin definir</span>)</span><b id="t-com">—</b></div>
           <div class="tot-row"><span>Flete</span><b id="t-flete2">—</b></div>
           <div class="tot-row"><span>Puesto en estancia · total</span><b id="t-puesto">—</b></div>
           <div class="tot-row"><span>Puesto en estancia · por cabeza</span><b id="t-puesto-cab">—</b></div>
@@ -636,10 +670,9 @@ header.top .who b{color:var(--brand);font-weight:600}
           <div class="tot-row"><span>Puesto en estancia · US$ por cabeza</span><b id="t-usd-puesto-cab">—</b></div>
           <div class="tot-row"><span>Puesto en estancia · US$ por kg</span><b id="t-usd-puesto-kg">—</b></div>
         </div>
-        <div class="card flat stack" style="gap:6px">
-          <div class="hint"><b>Cómo facturar</b></div>
-          <div class="hint" id="fact-animales">Factura de los animales: IVA 5 % → el IVA es el total ÷ 21.</div>
-          <div class="hint" id="fact-comision">Factura de la comisión: IVA 10 % → el IVA es el total ÷ 11.</div>
+        <div class="card flat stack facturar" style="gap:10px">
+          <div id="fact-animales"></div>
+          <div id="fact-comision"></div>
         </div>
       </div>
 
@@ -653,38 +686,21 @@ header.top .who b{color:var(--brand);font-weight:600}
     <!-- ===== PÁGINA 2: DOCUMENTACIÓN Y PAGO ===== -->
     <div id="pag2" class="stack" style="display:none">
       <div class="card stack">
-        <div class="section-title"><span class="dot"></span><h3>Guía(s) de traslado y COTA(s)</h3></div>
-        <p class="hint">Por cada guía: una foto nítida de la <b>guía de traslado</b> (GE2) y otra de su <b>COTA</b> (certificado del SENACSA con QR). Las dos son obligatorias. Si la factura abarca varias guías, agregue una por una.</p>
-        <div id="guias-list" class="stack"></div>
-        <button class="btn" type="button" id="btn-add-guia">＋ Agregar otra guía con su COTA</button>
-      </div>
-      <div class="card stack">
-        <div class="section-title"><span class="dot"></span><h3>Factura del proveedor</h3></div>
-        <div class="photo">
-          <label class="f"><span class="req">Foto de la factura</span><span class="hint">Debe verse el timbrado, su vigencia, el RUC, la razón social del cliente, el total y la liquidación del IVA.</span></label>
-          <img class="thumb" id="thumb-factura" alt="">
-          <div class="row"><button class="btn" type="button" data-cam="factura">📷 Sacar foto</button><button class="btn" type="button" data-gal="factura">🖼 Galería</button><button class="btn danger hidden" type="button" id="btn-quitar-factura">✕ Quitar</button></div>
-          <input type="file" id="file-factura" accept="image/*">
-        </div>
-        <label class="f"><span>Nº de factura</span><span class="hint">Se completa solo con la lectura de la IA; puede corregirlo.</span><input type="text" id="f-factura-nro" placeholder="001-001-0000000" autocomplete="off" inputmode="numeric"></label>
+        <div class="section-title"><span class="dot"></span><h3>Documentos (fotos)</h3></div>
+        <p class="hint">Saque una foto nítida, de frente y con buena luz, de <b>cada</b> documento. Una compra puede tener varias facturas, y cada factura varias guías; cada guía tiene su COTA. Los números los lee la IA.</p>
+        <div class="doc-grupo" id="docs-facturas"></div>
+        <div class="doc-grupo" id="docs-guias"></div>
+        <div class="doc-grupo" id="docs-cotas"></div>
       </div>
       <div class="card stack">
         <div class="section-title"><span class="dot"></span><h3>Datos bancarios del proveedor</h3></div>
-        <label class="f"><span class="req">Titular de la cuenta</span><input type="text" id="f-bco-titular" placeholder="Apellidos y nombres como figura en el banco" autocomplete="off"></label>
-        <label class="f"><span class="req">Banco / entidad</span><input type="text" id="f-bco-entidad" placeholder="Ej.: ueno bank, Itaú, BNF…" autocomplete="off" list="bancos-list"><datalist id="bancos-list"></datalist></label>
-        <div class="row">
-          <label class="f"><span class="req">Nº de cuenta</span><input type="text" id="f-bco-cuenta" inputmode="numeric" autocomplete="off"></label>
-          <label class="f"><span>Moneda</span><select id="f-bco-moneda"><option value="GS">Guaraníes (₲)</option><option value="USD">Dólares (US$)</option></select></label>
-        </div>
-        <div class="row">
-          <label class="f"><span class="req">Documento</span><select id="f-bco-doc-tipo"><option value="RUC">RUC</option><option value="CI">Cédula</option><option value="Otro">Otro</option></select></label>
-          <label class="f"><span class="req">Número</span><input type="text" id="f-bco-doc" inputmode="numeric" placeholder="Ej.: 7538271" autocomplete="off"></label>
-        </div>
-        <label class="f"><span>Alias (si el banco lo usa)</span><input type="text" id="f-bco-alias" placeholder="Opcional" autocomplete="off"></label>
+        <div id="bancos-list" class="stack"></div>
+        <button class="btn" type="button" id="btn-add-banco">＋ Agregar otra cuenta</button>
+        <datalist id="bancos-dl"></datalist>
       </div>
       <div class="card stack" id="card-ia">
         <div class="section-title" style="justify-content:space-between"><div style="display:flex;align-items:center;gap:10px"><span class="dot"></span><h3>Verificación automática (IA)</h3></div><span class="badge" id="ia-badge">Pendiente</span></div>
-        <div class="hint" id="ia-texto">Con señal, la IA lee la factura, las guías y las COTAs y controla: que el vendedor de la factura, de la guía, de la COTA y el titular de la cuenta sean el mismo; que la guía cite esta factura y la COTA cite su guía; que el timbrado esté vigente; que el monto y el IVA sean correctos; que el destino de la COTA sea la estancia elegida y que la cantidad de animales coincida. Sin señal, se verifica sola al volver la conexión.</div>
+        <div class="hint" id="ia-texto">Con señal, la IA lee todas las facturas, guías y COTAs y controla: que el vendedor sea el mismo en la factura, la guía, la COTA y la cuenta bancaria; que cada guía cite su factura y cada COTA su guía; que las cabezas de cada factura coincidan con sus guías; timbrado vigente, monto e IVA; destino y cantidad. Sin señal, se verifica sola al volver la conexión.</div>
         <div id="ia-checks" class="stack" style="gap:6px"></div>
         <dl class="kv hidden" id="ia-extraido"></dl>
         <div class="row"><button class="btn" type="button" id="btn-ia">🔎 Verificar ahora</button></div>
@@ -755,17 +771,19 @@ header.top .who b{color:var(--brand);font-weight:600}
 
 <div id="mapa-modal">
   <div class="bar top">
-    <div class="row"><span class="titulo">📍 ¿Dónde está el corral?</span><button class="btn" type="button" id="mapa-capa">🛰 Satélite</button></div>
+    <div class="row"><span class="titulo" id="mapa-titulo">📍 ¿Dónde está el corral?</span><button class="btn" type="button" id="mapa-capa">🗺 Mapa</button></div>
   </div>
   <div class="lienzo">
     <canvas id="mapa-canvas"></canvas>
+    <div class="pin-fijo" id="mapa-pin" aria-hidden="true"><svg viewBox="0 0 40 52" width="40" height="52"><path d="M20 51C20 51 4 31 4 19a16 16 0 0 1 32 0c0 12-16 32-16 32z" fill="#E03A2A" stroke="#fff" stroke-width="3"/><circle cx="20" cy="19" r="6" fill="#fff"/></svg></div>
     <button class="loc" type="button" id="mapa-loc" title="Mi ubicación">◎</button>
     <div class="zoom"><button type="button" id="mapa-zin">+</button><button type="button" id="mapa-zout">−</button></div>
-    <div class="attr" id="mapa-attr">© OpenStreetMap</div>
+    <div class="attr" id="mapa-attr">Esri World Imagery</div>
   </div>
   <div class="bar abajo">
-    <span id="mapa-msg" style="font-size:13.5px">Arrastre el punto rojo hasta el corral (o toque el mapa) y apriete OK.</span>
-    <div class="row"><button class="btn" type="button" id="mapa-cancel">✕ Cancelar</button><button class="btn ok" type="button" id="mapa-ok">✓ OK</button></div>
+    <span id="mapa-msg" style="font-size:13.5px">Mueva el mapa hasta que el punto rojo quede sobre el corral y apriete OK.</span>
+    <div class="row" id="mapa-acc-punto"><button class="btn" type="button" id="mapa-cancel">✕ Cancelar</button><button class="btn ok" type="button" id="mapa-ok">✓ OK</button></div>
+    <div class="row hidden" id="mapa-acc-ruta"><button class="btn" type="button" id="ruta-manual">✎ No es coherente: escribir a mano</button><button class="btn ok" type="button" id="ruta-ok">✓ Usar estos km</button></div>
   </div>
 </div>
 
@@ -883,7 +901,7 @@ const LOGO_PDF_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAaIAAAB4CAYAAACw2faSAACLZklEQVR42u
    Construido sobre el app "Registro de manejo" (misma base: PWA sin conexión, IndexedDB + autoguardado,
    copia en la nube, contraseñas de 4 números verificadas por el servidor, PDF con pdf-lib, mapa OSM).
    ===================================================================================================== */
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 const ESQUEMA = 'compras-ypoti/1';
 const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzpJMDSnuFe7jQjVYM7pqa-Q1Jnydm21VRosUvgcLKhAv8DFrDMRrV5ih-A9sLAhXX0Tg/exec'; // URL /exec del servidor (Apps Script) · ver README
 const EMPRESA = { razon_social:'RURAL BIOENERGIA S.A.', ruc:'80050418-6', ruc_base:'80050418' };
@@ -908,6 +926,10 @@ const ESTADO_CLS = { borrador:'draft', completa:'pend', enviada:'warn', autoriza
 const IA_LABEL = { pendiente:'IA: pendiente', sin_fotos:'IA: faltan fotos', verificando:'IA: verificando…', ok:'IA: ✓ todo coincide', advertencias:'IA: ⚠ con advertencias', errores:'IA: ✗ corregir', error_servicio:'IA: sin respuesta' };
 const IA_CLS = { pendiente:'pend', sin_fotos:'pend', verificando:'pend', ok:'ok', advertencias:'warn', errores:'bad', error_servicio:'warn' };
 
+/* ---------- ancho fijo: sin zoom de la página (el mapa tiene su propio zoom) ---------- */
+['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('touchmove',e=>{ if(e.touches&&e.touches.length>1) e.preventDefault(); },{passive:false});
+let ultimoToque=0; document.addEventListener('touchend',e=>{ const t=Date.now(); if(t-ultimoToque<300 && !(e.target.closest&&e.target.closest('input,textarea,select,#mapa-canvas'))) e.preventDefault(); ultimoToque=t; },{passive:false});
 /* ---------- helpers ---------- */
 const $ = id => document.getElementById(id);
 const pad = n => String(n).padStart(2,'0');
@@ -998,65 +1020,86 @@ $('btn-logout').addEventListener('click',logout);
 
 
 /* =====================================================================================================
-   Formulario: estado F (la orden en edición), campos, pesaje, ubicación, km por ruta, flete, cálculos,
-   fotos, video, guías, verificación IA.
+   Formulario (v1.1): estado F, campos, pesaje, cálculos y "cómo facturar", flete (contactos, cabezas por camión),
+   ubicación y mapa (pin fijo al centro, pinza, doble toque, ruta), documentos (N facturas, N guías, N COTAs),
+   cuentas bancarias, video y verificación IA.
    ===================================================================================================== */
-function nuevaOrden(){ return { comisionista: sesion&&!esAdmin()?sesion.nombre:'', comisionista_otro:'', proveedor:'', categoria:'', fecha:todayISO(), hora:nowHM(), localidad:'', ubicacion:null, carimbo:'', sola_marca:'', raza:'',
-  destino:'', km:'', km_fuente:'', km_detalle:'', retorno:'no', flete:{prov:'', otro:'', precio:'', viajes:'', auto:true, viajes_auto:true},
-  precio_modo:'kg', pesos:[], cabezas:'', peso_est:'', precio:'', cambio:(cfg.cambio||''), com_modo:'cab', com_tasa:'', obs:'',
-  guias:[nuevaGuia()], factura_nro:'', foto_animales:null, foto_factura:null,
-  banco:{titular:'', entidad:'', cuenta:'', moneda:'GS', doc_tipo:'RUC', doc:'', alias:''} }; }
+const RAZA_LABEL = { zebu:'Zebú', hibrido:'Híbrido', mezclado:'Mezclado' };
+const TRANSPORTISTAS = {
+  'Toro Pampa': { empresa:'Toro Pampa S.A.', nombre:'Pedro Maidana', cargo:'Gerente de Logística Ganado', tel:'0981 359786' },
+  'Cerro Porã': { empresa:'Cerro Porã', nombre:'Hugo Paniagua', cargo:'Responsable de flete', tel:'0981 295007' }
+};
+const telIntl = t => '595'+String(t||'').replace(/\D/g,'').replace(/^0/,'');
+function nuevoBanco(){ return {id:uuid(), titular:'', entidad:'', cuenta:'', moneda:'GS', doc_tipo:'RUC', doc:'', alias:''}; }
+function nuevaOrden(){ return { comisionista: sesion&&!esAdmin()?sesion.nombre:'', comisionista_otro:'', proveedor:'', categoria:'', cantidad:'', fecha:todayISO(), hora:nowHM(), localidad:'', ubicacion:null, carimbo:'', sola_marca:'', raza:'',
+  precio_modo:'kg', precio:'', pesos:[], peso_est:'',
+  destino:'', km:'', km_fuente:'', km_detalle:'', ruta:null, retorno:'no', flete:{prov:'', otro:'', precio:'', viajes:'', cab_camion:CAPACIDAD_VIAJE, auto:true, viajes_auto:true},
+  com_modo:'', com_tasa:'', cambio:(cfg.cambio||''), obs:'',
+  docs:{facturas:[], guias:[], cotas:[]}, bancos:[nuevoBanco()] }; }
 let F=nuevaOrden(), w=null, formId=null, pagina=1, dirty=false, autoOff=false, autoEnCurso=false, colaGuardado=Promise.resolve();
 function enCola(fn){ const p=colaGuardado.then(()=>fn()); colaGuardado=p.catch(()=>{}); return p; }
 function formActivo(){ return $('scr-form').classList.contains('active'); }
-/* campos simples: id del input -> clave en F (con punto para anidados) */
-const FIELDS={ 'f-proveedor':'proveedor','f-categoria':'categoria','f-fecha':'fecha','f-hora':'hora','f-localidad':'localidad','f-carimbo':'carimbo','f-destino':'destino','f-km':'km','f-flete-otro':'flete.otro','f-flete-precio':'flete.precio','f-flete-viajes':'flete.viajes','f-cabezas':'cabezas','f-peso-est':'peso_est','f-precio':'precio','f-cambio':'cambio','f-com-tasa':'com_tasa','f-obs':'obs','f-factura-nro':'factura_nro','f-comisionista-otro':'comisionista_otro',
-  'f-bco-titular':'banco.titular','f-bco-entidad':'banco.entidad','f-bco-cuenta':'banco.cuenta','f-bco-moneda':'banco.moneda','f-bco-doc-tipo':'banco.doc_tipo','f-bco-doc':'banco.doc','f-bco-alias':'banco.alias' };
+/* campos simples: id del input -> clave en F */
+const FIELDS={ 'f-proveedor':'proveedor','f-categoria':'categoria','f-cantidad':'cantidad','f-fecha':'fecha','f-hora':'hora','f-localidad':'localidad','f-carimbo':'carimbo','f-precio':'precio','f-peso-est':'peso_est','f-destino':'destino','f-km':'km','f-flete-otro':'flete.otro','f-flete-precio':'flete.precio','f-flete-viajes':'flete.viajes','f-cab-camion':'flete.cab_camion','f-com-tasa':'com_tasa','f-cambio':'cambio','f-obs':'obs','f-comisionista-otro':'comisionista_otro' };
 const SEGS={ 'seg-sola-marca':'sola_marca','seg-raza':'raza','seg-retorno':'retorno','seg-flete':'flete.prov','seg-precio-modo':'precio_modo','seg-com-modo':'com_modo' };
 const getP=(o,p)=>p.split('.').reduce((a,k)=>a==null?a:a[k],o);
 const setP=(o,p,v)=>{ const ks=p.split('.'); let a=o; ks.slice(0,-1).forEach(k=>{ if(a[k]==null) a[k]={}; a=a[k]; }); a[ks[ks.length-1]]=v; };
-function comisionistaValue(){ const v=$('f-comisionista').value; return v==='Otro…'?($('f-comisionista-otro').value||'').trim():v; }
 function destinoCod(){ const e=estancia(F.destino); return e?e.cod:''; }
-function destinoTxt(){ const c=destinoCod(); return (F.destino||'')+(c?' (cód. '+c+')':''); }
 
-/* ---------- pesaje animal por animal ---------- */
-function cabezasDe(f){ return f.pesos.length ? f.pesos.length : (f.precio_modo==='cabeza' ? Math.round(num(f.cabezas)) : 0); }
-function pesoTotalDe(f){ if(f.pesos.length) return f.pesos.reduce((a,b)=>a+num(b),0); if(f.precio_modo==='cabeza' && num(f.peso_est)>0) return cabezasDe(f)*num(f.peso_est); return 0; }
+/* ---------- migración de órdenes guardadas con la versión 1.0 ---------- */
+function migrarForm(f){ f=f||nuevaOrden(); const base=nuevaOrden();
+  Object.keys(base).forEach(k=>{ if(f[k]===undefined) f[k]=JSON.parse(JSON.stringify(base[k])); });
+  if(!f.flete) f.flete=base.flete; ['cab_camion','viajes_auto','auto'].forEach(k=>{ if(f.flete[k]===undefined) f.flete[k]=base.flete[k]; });
+  if((f.cantidad===''||f.cantidad==null) && (f.cabezas||((f.pesos||[]).length))) f.cantidad=String(f.cabezas||f.pesos.length);
+  if(f.com_modo==='kg'){ f.com_modo='cab'; }
+  if(!f.docs){ f.docs={facturas:[], guias:[], cotas:[]}; if(f.foto_factura) f.docs.facturas.push({id:uuid(), foto:f.foto_factura}); (f.guias||[]).forEach(g=>{ if(g.foto) f.docs.guias.push({id:uuid(), foto:g.foto}); if(g.cota_foto) f.docs.cotas.push({id:uuid(), foto:g.cota_foto}); }); }
+  ['facturas','guias','cotas'].forEach(k=>{ if(!Array.isArray(f.docs[k])) f.docs[k]=[]; });
+  if(!Array.isArray(f.bancos)||!f.bancos.length){ const b=f.banco; f.bancos=[Object.assign(nuevoBanco(), b||{})]; }
+  delete f.foto_factura; delete f.guias; delete f.foto_animales; delete f.banco; delete f.factura_nro; delete f.cabezas;
+  return f; }
+
+/* ---------- pesaje y cálculos ---------- */
+function cabezasDe(f){ return Math.max(0, Math.round(num(f.cantidad))); }
+function pesoTotalDe(f){ if(f.precio_modo==='kg') return (f.pesos||[]).reduce((a,b)=>a+num(b),0); const c=cabezasDe(f); return c && num(f.peso_est)>0 ? c*num(f.peso_est) : 0; }
+function promedioDe(f){ if(f.precio_modo==='kg'){ const n=(f.pesos||[]).length; return n? pesoTotalDe(f)/n : 0; } return num(f.peso_est); }
 function cabezas(){ return cabezasDe(F); }
-function pesoTotal(){ return pesoTotalDe(F); }
 function addPeso(){ const inp=$('peso-input'); const v=num(inp.value); if(!(v>0)){ inp.focus(); return; } F.pesos.push(v); inp.value=''; dirty=true; renderPesos(); inp.focus(); }
 function renderPesos(){ const box=$('weights'); box.innerHTML=''; const p=F.precio_modo==='kg'?num(F.precio):0;
   if(!F.pesos.length) box.innerHTML='<div class="empty">Todavía no hay pesadas.</div>';
   F.pesos.forEach((v,i)=>{ const d=document.createElement('div'); d.className='w'; const n=document.createElement('span'); n.className='n'; n.textContent=i+1; const inp=document.createElement('input'); inp.type='number'; inp.inputMode='decimal'; inp.step='any'; inp.value=v; inp.setAttribute('aria-label','Pesada '+(i+1));
-    inp.addEventListener('input',()=>{ F.pesos[i]=num(inp.value); dirty=true; renderTotales(); d.querySelector('.v').textContent=valorTxt(i); }); const del=document.createElement('button'); del.type='button'; del.textContent='×'; del.setAttribute('aria-label','Quitar pesada '+(i+1)); del.addEventListener('click',()=>{ F.pesos.splice(i,1); dirty=true; renderPesos(); });
-    const vs=document.createElement('span'); vs.className='v'; vs.textContent=valorTxt(i); d.appendChild(n); d.appendChild(inp); d.appendChild(del); d.appendChild(vs); box.appendChild(d); });
-  function valorTxt(i){ return (p>0&&F.pesos[i]>0)?'Valor: '+gs(F.pesos[i]*p):''; }
-  const last=F.pesos[F.pesos.length-1]; $('last-info').textContent=F.pesos.length?'Última pesada: #'+F.pesos.length+' = '+fmt(last,1)+' kg':'Toque Agregar o Enter tras cada pesada'; $('sum-info').textContent=F.pesos.length?fmt(pesoTotal(),1)+' kg acumulados':'';
-  if(F.pesos.length){ $('f-cabezas').value=F.pesos.length; $('f-cabezas').classList.add('locked'); } else $('f-cabezas').classList.remove('locked');
+    const vs=document.createElement('span'); vs.className='v'; const vt=()=>{ vs.textContent=(p>0&&F.pesos[i]>0)?'Valor: '+gs(F.pesos[i]*p):''; }; vt();
+    inp.addEventListener('input',()=>{ F.pesos[i]=num(inp.value); dirty=true; renderTotales(); vt(); }); const del=document.createElement('button'); del.type='button'; del.textContent='×'; del.setAttribute('aria-label','Quitar pesada '+(i+1)); del.addEventListener('click',()=>{ F.pesos.splice(i,1); dirty=true; renderPesos(); });
+    d.appendChild(n); d.appendChild(inp); d.appendChild(del); d.appendChild(vs); box.appendChild(d); });
+  const last=F.pesos[F.pesos.length-1]; $('last-info').textContent=F.pesos.length?'Última pesada: #'+F.pesos.length+' = '+fmt(last,1)+' kg':'Toque Agregar o Enter tras cada pesada'; $('sum-info').textContent=F.pesos.length?fmt(pesoTotalDe(F),1)+' kg acumulados':'';
   renderTotales(); }
 $('btn-add').addEventListener('click',addPeso);
 $('peso-input').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addPeso(); } });
-
-/* ---------- cálculos ---------- */
+function calc(F){ const cab=cabezasDe(F), peso=pesoTotalDe(F), prom=promedioDe(F), precio=num(F.precio), modoKg=F.precio_modo==='kg'; const pesados=(F.pesos||[]).length;
+  const pagar = modoKg ? peso*precio : cab*precio; const ok = precio>0 && cab>0 && (modoKg ? peso>0 : true);
+  const tasa=num(F.com_tasa); const com = F.com_modo==='cab'?cab*tasa : F.com_modo==='pct'?pagar*tasa/100 : 0; const comOk = F.com_modo==='sin' ? cab>0 : (!!F.com_modo && tasa>0 && cab>0 && (F.com_modo==='pct'?ok:true));
+  const fletePrecio=num(F.flete.precio), viajes=num(F.flete.viajes), flete=fletePrecio*viajes; const fleteOk = !!F.flete.prov && (F.flete.prov!=='Otro'||!!F.flete.otro) && fletePrecio>0 && viajes>0;
+  const puesto=pagar+com+flete; const cambio=num(F.cambio); const u=x=>cambio>0?x/cambio:null; const pesoRef = modoKg ? (pesados ? prom*cab : 0) : peso; // kg del lote completo (en kg: promedio de los pesados × cabezas)
+  return { cab, pesados, peso, prom, pesoRef, precio, modoKg, pagar, ok, iva5:pagar/21, por_animal:cab?pagar/cab:0, por_kg:pesoRef?pagar/pesoRef:0, com, comOk, iva10:com/11, flete, fletePrecio, viajes, fleteOk, puesto, puesto_cab:cab?puesto/cab:0, puesto_kg:pesoRef?puesto/pesoRef:0, cambio,
+    usd:{ total:u(pagar), cab:cab?u(pagar/cab):null, kg:pesoRef?u(pagar/pesoRef):null, puesto_cab:cab?u(puesto/cab):null, puesto_kg:pesoRef?u(puesto/pesoRef):null } }; }
 function calcDe(f){ return calc(f); }
-function calc(F){ const cab=cabezasDe(F), peso=pesoTotalDe(F), prom=cab?peso/cab:0, precio=num(F.precio), modoKg=F.precio_modo==='kg';
-  const pagar = modoKg ? peso*precio : cab*precio; const ok = precio>0 && cab>0 && (modoKg?peso>0:true);
-  const tasa=num(F.com_tasa); const com = F.com_modo==='sin'?0 : F.com_modo==='cab'?cab*tasa : F.com_modo==='kg'?peso*tasa : pagar*tasa/100; const comOk = F.com_modo==='sin' ? cab>0 : (tasa>0 && cab>0 && (F.com_modo==='pct'?ok:(F.com_modo==='kg'?peso>0:true)));
-  const fletePrecio=num(F.flete.precio), viajes=num(F.flete.viajes), flete=fletePrecio*viajes; const fleteOk = F.flete.prov && (F.flete.prov!=='Otro'||F.flete.otro) && fletePrecio>=0 && viajes>0;
-  const puesto=pagar+com+flete; const cambio=num(F.cambio); const u=x=>cambio>0?x/cambio:null;
-  return { cab, peso, prom, precio, modoKg, pagar, ok, iva5:pagar/21, por_animal:cab?pagar/cab:0, por_kg:peso?pagar/peso:0, com, comOk, iva10:com/11, flete, fletePrecio, viajes, fleteOk, puesto, puesto_cab:cab?puesto/cab:0, puesto_kg:peso?puesto/peso:0, cambio,
-    usd:{ total:u(pagar), cab:cab?u(pagar/cab):null, kg:peso?u(pagar/peso):null, puesto_cab:cab?u(puesto/cab):null, puesto_kg:peso?u(puesto/peso):null } }; }
-function comDesc(F){ const t=num(F.com_tasa); if(F.com_modo==='sin') return 'sin comisión'; if(!(t>0)) return 'monto sin definir'; return F.com_modo==='cab'?fmt(t)+' ₲ por cabeza':F.com_modo==='kg'?fmt(t)+' ₲ por kg':fmt(t,2)+' % del total'; }
+function comDesc(F){ const t=num(F.com_tasa); if(F.com_modo==='sin') return 'sin comisión'; if(!F.com_modo) return 'forma sin definir'; if(!(t>0)) return 'monto sin definir'; return F.com_modo==='cab'?fmt(t)+' ₲ por cabeza':fmt(t,2)+' % del total'; }
+/* "Cómo facturar": el precio cheio ya incluye el IVA. En la compra por kg, el precio por cabeza se redondea a miles y el valor a facturar es cabezas × ese precio. */
+function facturacion(F){ const c=calc(F); const cab=c.cab; if(!c.ok) return null; const unit = c.modoKg ? Math.round(c.pagar/cab/1000)*1000 : Math.round(c.precio); const total=unit*cab; const e=estancia(F.destino);
+  const fa={ cantidad:cab, descripcion:(F.categoria||'Animales'), unitario:unit, total, iva5:Math.round(total/21), redondeo: c.modoKg ? total-Math.round(c.pagar) : 0 };
+  let fc=null; if(F.com_modo && F.com_modo!=='sin' && c.comOk && c.com>0){ const u2 = F.com_modo==='cab' ? Math.round(num(F.com_tasa)) : Math.round(c.com/cab); const t2=u2*cab; fc={ cantidad:cab, descripcion:'Comisión por '+cab+' animales hasta '+(F.destino&&F.destino!==DESTINO_A_DEFINIR?(e?e.n:F.destino):'la estancia de destino'), unitario:u2, total:t2, iva10:Math.round(t2/11) }; }
+  return {fa, fc}; }
+function bloqueFacturar(t, filas){ return '<div class="ft">'+esc(t)+'</div><div class="fl">'+filas.map(([k,v])=>'<span>'+esc(k)+'</span><b>'+esc(v)+'</b>').join('')+'</div>'; }
 function renderTotales(){ const c=calc(F); const d='—';
-  $('t-cab').textContent=c.cab; $('t-peso').textContent=fmt(c.peso,1)+' kg'; $('t-prom').textContent=c.cab&&c.peso?fmt(c.prom,1)+' kg':d; $('count-badge').textContent=c.cab+(c.cab===1?' animal':' animales')+(F.pesos.length?' pesados':'');
-  $('t-pagar').textContent=c.ok?gs(c.pagar):d; $('t-iva5').textContent=c.ok?gs(c.iva5):d; $('t-animal').textContent=c.ok?gs(c.por_animal):d; $('t-kg').textContent=c.ok&&c.peso?gs(c.por_kg):d;
-  $('com-rate-txt').textContent=comDesc(F); $('t-com').textContent=c.comOk?gs(c.com):d; $('t-iva10').textContent=c.comOk?gs(c.iva10):d;
-  $('t-flete').textContent=c.fleteOk?gs(c.flete):d; $('t-flete2').textContent=c.fleteOk?gs(c.flete):d;
-  const pOk=c.ok&&c.comOk&&c.fleteOk; $('t-puesto').textContent=pOk?gs(c.puesto):d; $('t-puesto-cab').textContent=pOk?gs(c.puesto_cab):d; $('t-puesto-kg').textContent=pOk&&c.peso?gs(c.puesto_kg):d;
-  const uOk=c.ok&&c.cambio>0; $('t-usd').textContent=uOk?usd(c.usd.total):d; $('t-usd-cab').textContent=uOk?usd(c.usd.cab):d; $('t-usd-kg').textContent=uOk&&c.peso?usd(c.usd.kg):d; $('t-usd-puesto-cab').textContent=uOk&&pOk?usd(c.usd.puesto_cab):d; $('t-usd-puesto-kg').textContent=uOk&&pOk&&c.peso?usd(c.usd.puesto_kg):d;
-  $('fact-animales').innerHTML = c.ok ? 'Factura de los animales (IVA 5 %): total <b>'+gs(c.pagar)+'</b> → IVA incluido <b>'+gs(c.iva5)+'</b> (total ÷ 21) · base <b>'+gs(c.pagar-c.iva5)+'</b>.' : 'Factura de los animales: IVA 5 % → el IVA es el total ÷ 21.';
-  $('fact-comision').innerHTML = c.comOk&&c.com>0 ? 'Factura de la comisión (IVA 10 %): total <b>'+gs(c.com)+'</b> → IVA incluido <b>'+gs(c.iva10)+'</b> (total ÷ 11) · base <b>'+gs(c.com-c.iva10)+'</b>.' : (F.com_modo==='sin'?'Sin comisión en esta compra.':'Factura de la comisión: IVA 10 % → el IVA es el total ÷ 11.');
-  if(F.flete.viajes_auto){ const v=c.cab?Math.ceil(c.cab/CAPACIDAD_VIAJE):''; if(String(F.flete.viajes)!==String(v)){ F.flete.viajes=v; $('f-flete-viajes').value=v; $('t-flete').textContent=calc(F).fleteOk?gs(calc(F).flete):d; $('t-flete2').textContent=$('t-flete').textContent; } } }
+  $('t-cab').textContent=c.cab; $('t-peso-lbl').textContent = c.modoKg ? 'Peso de los pesados' : 'Peso total estimado'; $('t-peso').textContent=fmt(c.peso,1)+' kg'+(c.modoKg&&c.cab?' ('+c.pesados+' de '+c.cab+')':''); $('t-prom').textContent=c.prom?fmt(c.prom,1)+' kg'+(c.modoKg?'':' (estimado)'):d;
+  const cb=$('count-badge'); if(c.modoKg){ cb.textContent=c.pesados+(c.cab?' de '+c.cab:'')+' pesados'; cb.className='badge '+(c.cab&&c.pesados===c.cab?'ok':c.pesados>c.cab&&c.cab?'bad':''); } else { cb.textContent=c.cab+' cabezas'; cb.className='badge'; }
+  $('t-pagar').textContent=c.ok?gs(c.pagar):d; $('t-animal').textContent=c.ok?gs(c.por_animal):d; $('t-kg').textContent=c.ok&&c.por_kg?gs(c.por_kg):d;
+  $('com-rate-txt').textContent=comDesc(F); $('t-com').textContent=c.comOk?gs(c.com):d;
+  $('t-flete').textContent=c.fleteOk?gs(c.flete)+' ('+c.viajes+(c.viajes===1?' viaje)':' viajes)'):d; $('t-flete2').textContent=c.fleteOk?gs(c.flete):d;
+  const pOk=c.ok&&c.comOk&&c.fleteOk; $('t-puesto').textContent=pOk?gs(c.puesto):d; $('t-puesto-cab').textContent=pOk?gs(c.puesto_cab):d; $('t-puesto-kg').textContent=pOk&&c.puesto_kg?gs(c.puesto_kg):d;
+  const uOk=c.ok&&c.cambio>0; $('t-usd').textContent=uOk?usd(c.usd.total):d; $('t-usd-cab').textContent=uOk?usd(c.usd.cab):d; $('t-usd-kg').textContent=uOk&&c.usd.kg!=null?usd(c.usd.kg):d; $('t-usd-puesto-cab').textContent=uOk&&pOk?usd(c.usd.puesto_cab):d; $('t-usd-puesto-kg').textContent=uOk&&pOk&&c.usd.puesto_kg!=null?usd(c.usd.puesto_kg):d;
+  const fx=facturacion(F); $('fact-animales').innerHTML = fx ? bloqueFacturar('Cómo facturar los animales', [['Cantidad',fx.fa.cantidad+' cabezas'],['Descripción',fx.fa.descripcion],['Precio unitario (por cabeza)',gs(fx.fa.unitario)],['Columna IVA 5 % (valor a facturar)',gs(fx.fa.total)],['Liquidación del IVA 5 % (total ÷ 21)',gs(fx.fa.iva5)]].concat(fx.fa.redondeo?[['Diferencia por redondeo del precio por cabeza',(fx.fa.redondeo>0?'+':'')+gs(fx.fa.redondeo)]]:[])) : '<div class="hint">Cómo facturar: complete cantidad, forma de compra, precio y pesaje.</div>';
+  $('fact-comision').innerHTML = fx&&fx.fc ? bloqueFacturar('Cómo facturar la comisión', [['Cantidad',fx.fc.cantidad],['Descripción',fx.fc.descripcion],['Precio unitario (por cabeza)',gs(fx.fc.unitario)],['Columna IVA 10 % (valor a facturar)',gs(fx.fc.total)],['Liquidación del IVA 10 % (total ÷ 11)',gs(fx.fc.iva10)]]) : (F.com_modo==='sin'?'<div class="hint">Sin comisión en esta compra.</div>':'');
+  if(F.flete.viajes_auto){ const cc=num(F.flete.cab_camion)||CAPACIDAD_VIAJE; const v=c.cab?Math.ceil(c.cab/cc):''; if(String(F.flete.viajes)!==String(v)){ F.flete.viajes=v; $('f-flete-viajes').value=v; renderTotales(); } } }
 
 /* ---------- flete: tabla de decisión Toro Pampa × Cerro Porã (mayo/2026) ---------- */
 function tarifasFlete(km){ km=num(km); if(!(km>0)) return null; let tp,cp,banda;
@@ -1070,23 +1113,28 @@ function sugerenciaFlete(F){ const t=tarifasFlete(F.km); if(!t) return null; let
   else { sug='Toro Pampa'; motivo='Toro Pampa es '+gs(t.cp-t.tp)+' más barata por viaje en la banda de '+t.banda+' (su flete mínimo funciona como techo).'; }
   return Object.assign(t,{sug, motivo}); }
 function precioFlete(prov){ const t=tarifasFlete(F.km); if(!t) return ''; return prov==='Toro Pampa'?t.tp:prov==='Cerro Porã'?t.cp:''; }
+function contactoHTML(prov){ const c=TRANSPORTISTAS[prov]; if(!c) return ''; return '<div class="contacto"><div class="q"><b>'+esc(c.empresa)+' · '+esc(c.nombre)+'</b>'+esc(c.cargo)+' · '+esc(c.tel)+'</div><a href="tel:+'+telIntl(c.tel)+'">📞 Llamar</a><a class="wa" target="_blank" rel="noopener" href="https://wa.me/'+telIntl(c.tel)+'">WhatsApp</a></div>'; }
 function renderFlete(){ const s=sugerenciaFlete(F); const box=$('flete-sug');
   if(!s){ box.innerHTML='<div class="hint">Cargue los kilómetros para ver la sugerencia de transportadora (tarifas de mayo/2026, sin ajuste por combustible).</div>'; }
   else { box.innerHTML='<div class="hint"><b>Sugerencia: pedir el camión a '+esc(s.sug)+'</b> · '+esc(s.motivo)+'</div><table class="flete-tab"><tr class="'+(s.sug==='Toro Pampa'?'sug':'')+'"><td>Toro Pampa</td><td>'+gs(s.tp)+' por viaje</td></tr><tr class="'+(s.sug==='Cerro Porã'?'sug':'')+'"><td>Cerro Porã</td><td>'+gs(s.cp)+' por viaje</td></tr><tr><td colspan="2" style="color:var(--ink-3)">Banda: '+esc(s.banda)+' · '+fmt(s.km,1)+' km</td></tr></table>';
-    if(F.flete.auto && F.flete.prov!==s.sug){ F.flete.prov=s.sug; F.flete.precio=precioFlete(s.sug); setSeg($('seg-flete'),F.flete.prov); $('f-flete-precio').value=F.flete.precio; } }
-  $('wrap-flete-otro').classList.toggle('hidden', F.flete.prov!=='Otro'); renderTotales(); }
-$('seg-flete').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; F.flete.prov=b.dataset.v; F.flete.auto=false; setSeg($('seg-flete'),F.flete.prov); if(F.flete.prov!=='Otro'){ const p=precioFlete(F.flete.prov); if(p!=='') { F.flete.precio=p; $('f-flete-precio').value=p; } } else { $('f-flete-otro').focus(); } dirty=true; renderFlete(); });
+    if(F.flete.auto && F.flete.prov!==s.sug){ F.flete.prov=s.sug; F.flete.precio=precioFlete(s.sug); setSeg($('seg-flete'),F.flete.prov); $('f-flete-precio').value=F.flete.precio; }
+    else if(F.flete.auto && F.flete.prov===s.sug && String(F.flete.precio)!==String(precioFlete(s.sug))){ F.flete.precio=precioFlete(s.sug); $('f-flete-precio').value=F.flete.precio; } }
+  $('flete-contacto').innerHTML=contactoHTML(F.flete.prov); $('wrap-flete-otro').classList.toggle('hidden', F.flete.prov!=='Otro'); renderTotales(); }
+$('seg-flete').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; F.flete.prov=b.dataset.v; F.flete.auto=false; setSeg($('seg-flete'),F.flete.prov); if(F.flete.prov!=='Otro'){ const p=precioFlete(F.flete.prov); if(p!==''){ F.flete.precio=p; $('f-flete-precio').value=p; } } else { $('f-flete-otro').focus(); } dirty=true; renderFlete(); });
 $('f-flete-viajes').addEventListener('input',()=>{ F.flete.viajes_auto = $('f-flete-viajes').value===''; });
+$('f-cab-camion').addEventListener('input',()=>{ F.flete.viajes_auto=true; });
 
 /* ---------- ubicación del corral: GPS + mapa ---------- */
 function ubicTxt(u){ return u ? u.lat.toFixed(5)+', '+u.lon.toFixed(5)+(u.precision_m?' (±'+Math.round(u.precision_m)+' m)':'')+(u.fuente==='mapa'?' · marcada en el mapa':' · GPS') : ''; }
 function renderUbic(){ const b=$('ubic-badge'), a=$('ubic-link'); b.className='badge'; if(!F.ubicacion){ b.textContent='Sin ubicación'; a.classList.add('hidden'); return; } b.classList.add('ok'); b.textContent=ubicTxt(F.ubicacion); a.href='https://www.google.com/maps?q='+F.ubicacion.lat+','+F.ubicacion.lon; a.classList.remove('hidden'); }
-function setUbic(u){ F.ubicacion=u; dirty=true; renderUbic(); if(F.km_fuente==='ruta'){ F.km=''; F.km_fuente=''; F.km_detalle=''; $('f-km').value=''; renderKm(); } if(navigator.onLine && estancia(F.destino) && !estancia(F.destino).sinCoord) calcKm(true); }
+function setUbic(u){ F.ubicacion=u; dirty=true; renderUbic(); if(F.km_fuente==='ruta'){ F.km=''; F.km_fuente=''; F.km_detalle=''; F.ruta=null; $('f-km').value=''; renderKm(); } if(navigator.onLine && estancia(F.destino) && !estancia(F.destino).sinCoord) calcKm(false); }
 function gpsActual(){ return new Promise((res,rej)=>{ if(!navigator.geolocation) return rej(new Error('Este teléfono no permite usar la ubicación aquí.')); navigator.geolocation.getCurrentPosition(p=>res({lat:+p.coords.latitude.toFixed(6), lon:+p.coords.longitude.toFixed(6), precision_m:Math.round(p.coords.accuracy)}), e=>rej(new Error(e.code===1?'Permiso de ubicación denegado: actívelo para este sitio.':e.code===2?'Sin señal de GPS.':'La ubicación tardó demasiado.')), {enableHighAccuracy:true, timeout:20000, maximumAge:0}); }); }
 $('btn-ubic-gps').addEventListener('click',async()=>{ const b=$('ubic-badge'); b.textContent='Buscando la ubicación…'; try{ const u=await gpsActual(); if(!dentroPY(u.lat,u.lon)){ renderUbic(); toast('La ubicación del teléfono está fuera del Paraguay ('+u.lat.toFixed(4)+', '+u.lon.toFixed(4)+'). Marque el punto en el mapa.'); return; } setUbic(Object.assign(u,{fuente:'gps', tomada_en:new Date().toISOString()})); toast('Ubicación tomada'); }catch(e){ renderUbic(); toast(e.message+' Puede marcar el punto en el mapa.'); } });
 $('btn-ubic-mapa').addEventListener('click',()=>openMapa(F.ubicacion, u=>setUbic(u)));
-/* mapa (igual al del app de manejo): se arrastra el punto rojo; la vista no sale del Paraguay */
-const MAPA={ z:15, lat:-23.33, lon:-56.71, plat:-23.33, plon:-56.71, tiles:{}, cb:null, drag:null, raf:0, capa:'mapa', aviso:0 };
+
+/* ---------- mapa: el pin queda fijo en el centro; se mueve el mapa (arrastre, pinza, doble toque, rueda) ----------
+   Zoom continuo: se dibujan las teselas del nivel entero más cercano, escaladas. Por defecto, imagen satelital. */
+const MAPA={ z:15, lat:-23.33, lon:-56.71, tiles:{}, cb:null, capa:'sat', modo:'punto', ruta:null, ptrs:new Map(), gesto:null, ultTap:null, movido:false };
 const PY_POL=(window.MapaPY&&window.MapaPY.PY_OUTLINE)||[]; const PY_TOL_KM=1.5;
 const PY_BB=PY_POL.reduce((b,c)=>({lonMin:Math.min(b.lonMin,c[0]),lonMax:Math.max(b.lonMax,c[0]),latMin:Math.min(b.latMin,c[1]),latMax:Math.max(b.latMax,c[1])}),{lonMin:180,lonMax:-180,latMin:90,latMax:-90});
 function enPY(lat,lon){ let d=false; for(let i=0,j=PY_POL.length-1;i<PY_POL.length;j=i++){ const xi=PY_POL[i][0], yi=PY_POL[i][1], xj=PY_POL[j][0], yj=PY_POL[j][1]; if(((yi>lat)!==(yj>lat)) && (lon<(xj-xi)*(lat-yi)/(yj-yi)+xi)) d=!d; } return d; }
@@ -1094,88 +1142,116 @@ function bordePY(lat,lon){ const k=Math.cos(lat*Math.PI/180); const px=lon*k, py
   for(let i=0,j=PY_POL.length-1;i<PY_POL.length;j=i++){ const ax=PY_POL[j][0]*k, ay=PY_POL[j][1], bx=PY_POL[i][0]*k, by=PY_POL[i][1]; const vx=bx-ax, vy=by-ay; const L=vx*vx+vy*vy; let t=L?((px-ax)*vx+(py-ay)*vy)/L:0; t=Math.max(0,Math.min(1,t)); const qx=ax+t*vx, qy=ay+t*vy; const dd=(px-qx)*(px-qx)+(py-qy)*(py-qy); if(dd<bd){ bd=dd; best={lat:qy, lon:qx/k}; } }
   return Object.assign(best||{lat,lon},{km:Math.sqrt(bd)*111.2}); }
 function dentroPY(lat,lon){ if(!PY_POL.length) return true; if(!(isFinite(lat)&&isFinite(lon))) return false; return enPY(lat,lon) || bordePY(lat,lon).km<=PY_TOL_KM; }
-function ajustarPY(lat,lon){ if(dentroPY(lat,lon)) return {lat,lon,fuera:false}; const b=bordePY(lat,lon); const dl=b.lat-lat, dn=b.lon-lon, n=Math.hypot(dl,dn)||1; const c={lat:b.lat+dl/n*0.003, lon:b.lon+dn/n*0.003}; return dentroPY(c.lat,c.lon)?Object.assign(c,{fuera:true}):{lat:b.lat,lon:b.lon,fuera:true}; }
 function centrarEnPY(){ MAPA.lat=Math.max(PY_BB.latMin,Math.min(PY_BB.latMax,MAPA.lat)); MAPA.lon=Math.max(PY_BB.lonMin,Math.min(PY_BB.lonMax,MAPA.lon)); }
-function ponerPin(lat,lon){ const r=ajustarPY(lat,lon); MAPA.plat=r.lat; MAPA.plon=r.lon; if(r.fuera) MAPA.aviso=Date.now(); return !r.fuera; }
 const TILE_URL={ mapa:(z,x,y)=>'https://tile.openstreetmap.org/'+z+'/'+x+'/'+y+'.png', sat:(z,x,y)=>'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+y+'/'+x };
 const TILE_ATTR={ mapa:'© OpenStreetMap', sat:'Imagen: Esri World Imagery (Maxar, Earthstar Geographics)' };
+const Z_MIN=6, Z_MAX=19;
 const lon2x=(lon,z)=>(lon+180)/360*Math.pow(2,z), lat2y=(lat,z)=>(1-Math.log(Math.tan(lat*Math.PI/180)+1/Math.cos(lat*Math.PI/180))/Math.PI)/2*Math.pow(2,z);
 const x2lon=(x,z)=>x/Math.pow(2,z)*360-180, y2lat=(y,z)=>{ const n=Math.PI-2*Math.PI*y/Math.pow(2,z); return 180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))); };
-function mapaTile(z,x,y){ const n=Math.pow(2,z); x=((x%n)+n)%n; if(y<0||y>=n) return null; const k=MAPA.capa+'/'+z+'/'+x+'/'+y; let t=MAPA.tiles[k]; if(!t){ t={img:new Image(), ok:false, err:false}; MAPA.tiles[k]=t; t.img.onload=()=>{ t.ok=true; mapaDraw(); }; t.img.onerror=()=>{ t.err=true; mapaDraw(); }; t.img.src=TILE_URL[MAPA.capa](z,x,y); } return t; }
+function mapaTile(z,x,y){ const n=Math.pow(2,z); x=((x%n)+n)%n; if(y<0||y>=n) return null; const k=MAPA.capa+'/'+z+'/'+x+'/'+y; let t=MAPA.tiles[k]; if(!t){ t={img:new Image(), ok:false, err:false}; MAPA.tiles[k]=t; t.img.onload=()=>{ t.ok=true; pedirDibujo(); }; t.img.onerror=()=>{ t.err=true; pedirDibujo(); }; t.img.src=TILE_URL[MAPA.capa](z,x,y); } return t; }
 function mapaTam(){ const cv=$('mapa-canvas'); return {W:cv.clientWidth, H:cv.clientHeight}; }
 function mapaXY(lat,lon){ const {W,H}=mapaTam(); const z=MAPA.z; return { x:W/2+(lon2x(lon,z)-lon2x(MAPA.lon,z))*256, y:H/2+(lat2y(lat,z)-lat2y(MAPA.lat,z))*256 }; }
 function mapaLL(px,py){ const {W,H}=mapaTam(); const z=MAPA.z; const x=lon2x(MAPA.lon,z)+(px-W/2)/256, y=lat2y(MAPA.lat,z)+(py-H/2)/256; return { lat:Math.max(-85,Math.min(85,y2lat(y,z))), lon:x2lon(x,z) }; }
+let rafMapa=0; function pedirDibujo(){ if(rafMapa) return; rafMapa=requestAnimationFrame(()=>{ rafMapa=0; mapaDraw(); }); }
 function mapaDraw(){ const cv=$('mapa-canvas'); const W=cv.clientWidth, H=cv.clientHeight; if(!W||!H) return; const dpr=window.devicePixelRatio||1; if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); } const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); g.fillStyle='#1d2520'; g.fillRect(0,0,W,H);
-  const z=MAPA.z, cx=lon2x(MAPA.lon,z), cy=lat2y(MAPA.lat,z); const x0=Math.floor(cx-W/2/256), x1=Math.floor(cx+W/2/256), y0=Math.floor(cy-H/2/256), y1=Math.floor(cy+H/2/256);
-  let faltan=0; for(let tx=x0;tx<=x1;tx++) for(let ty=y0;ty<=y1;ty++){ const px=W/2+(tx-cx)*256, py=H/2+(ty-cy)*256; const t=mapaTile(z,tx,ty); if(t&&t.ok) g.drawImage(t.img,px,py,256,256); else { g.strokeStyle='#33403a'; g.strokeRect(px,py,256,256); if(t&&t.err) faltan++; } }
+  const tz=Math.max(0,Math.min(Z_MAX,Math.round(MAPA.z))); const s=Math.pow(2,MAPA.z-tz), ts=256*s; const cx=lon2x(MAPA.lon,tz)*256, cy=lat2y(MAPA.lat,tz)*256;
+  const x0=Math.floor((cx-W/2/s)/256), x1=Math.floor((cx+W/2/s)/256), y0=Math.floor((cy-H/2/s)/256), y1=Math.floor((cy+H/2/s)/256); let faltan=0;
+  for(let tx=x0;tx<=x1;tx++) for(let ty=y0;ty<=y1;ty++){ const px=W/2+(tx*256-cx)*s, py=H/2+(ty*256-cy)*s; const t=mapaTile(tz,tx,ty); if(t&&t.ok) g.drawImage(t.img,px,py,ts+0.5,ts+0.5); else { g.strokeStyle='#33403a'; g.strokeRect(px,py,ts,ts); if(t&&t.err) faltan++; } }
   if(PY_POL.length){ g.save(); g.beginPath(); g.rect(0,0,W,H); PY_POL.forEach((c,i)=>{ const q=mapaXY(c[1],c[0]); if(i) g.lineTo(q.x,q.y); else g.moveTo(q.x,q.y); }); g.closePath(); g.fillStyle='rgba(15,20,17,.55)'; g.fill('evenodd'); g.beginPath(); PY_POL.forEach((c,i)=>{ const q=mapaXY(c[1],c[0]); if(i) g.lineTo(q.x,q.y); else g.moveTo(q.x,q.y); }); g.closePath(); g.lineWidth=2.5; g.strokeStyle='rgba(242,211,58,.95)'; g.setLineDash([8,5]); g.stroke(); g.restore(); }
-  const p=mapaXY(MAPA.plat,MAPA.plon); const arrastrando=MAPA.drag&&MAPA.drag.pin; const R=arrastrando?16:13, cyP=p.y-R-12;
-  g.save(); g.fillStyle='rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(p.x,p.y,8,3,0,0,Math.PI*2); g.fill(); g.beginPath(); g.moveTo(p.x,p.y); g.lineTo(p.x-R*0.62,cyP+R*0.75); g.arc(p.x,cyP,R,Math.PI*0.78,Math.PI*0.22); g.closePath(); g.fillStyle='#E03A2A'; g.fill(); g.lineWidth=3; g.strokeStyle='#fff'; g.stroke(); g.beginPath(); g.arc(p.x,cyP,R*0.38,0,Math.PI*2); g.fillStyle='#fff'; g.fill(); g.restore();
-  const avisoPY=Date.now()-MAPA.aviso<4000; $('mapa-msg').textContent=(avisoPY?'⚠ El punto tiene que quedar dentro del Paraguay: quedó en la frontera. ':faltan?'Sin señal: el mapa no se ve. Use ◎ para ir a su ubicación y apriete OK. ':'Arrastre el punto rojo hasta el corral (o toque el mapa) y apriete OK. ')+MAPA.plat.toFixed(5)+', '+MAPA.plon.toFixed(5);
-  $('mapa-msg').classList.toggle('aviso-py',avisoPY); if(avisoPY) setTimeout(()=>{ if(Date.now()-MAPA.aviso>=4000) mapaDraw(); },4100); $('mapa-attr').textContent=TILE_ATTR[MAPA.capa]; }
-function mapaPan(dx,dy){ const z=MAPA.z; const x=lon2x(MAPA.lon,z)-dx/256, y=lat2y(MAPA.lat,z)-dy/256; MAPA.lon=x2lon(x,z); MAPA.lat=Math.max(-85,Math.min(85,y2lat(y,z))); centrarEnPY(); mapaDraw(); }
-function openMapa(inicial, cb){ MAPA.cb=cb; $('mapa-modal').classList.add('on'); const go=(lat,lon)=>{ ponerPin(lat,lon); MAPA.lat=MAPA.plat; MAPA.lon=MAPA.plon; centrarEnPY(); mapaDraw(); };
-  if(inicial){ go(inicial.lat,inicial.lon); } else { go(MAPA.lat,MAPA.lon); gpsActual().then(u=>{ if(!MAPA.movido && dentroPY(u.lat,u.lon)) go(u.lat,u.lon); }).catch(()=>{}); } MAPA.movido=false; setTimeout(mapaDraw,50); }
-function closeMapa(){ $('mapa-modal').classList.remove('on'); MAPA.cb=null; MAPA.drag=null; }
+  if(MAPA.modo==='ruta' && MAPA.ruta){ const r=MAPA.ruta; g.save(); g.lineJoin='round'; g.lineCap='round'; const camino=()=>{ g.beginPath(); r.coords.forEach((c,i)=>{ const q=mapaXY(c[1],c[0]); if(i) g.lineTo(q.x,q.y); else g.moveTo(q.x,q.y); }); };
+    camino(); g.lineWidth=8; g.strokeStyle='rgba(255,255,255,.9)'; g.stroke(); camino(); g.lineWidth=4.5; g.strokeStyle='#1F6FEB'; g.stroke();
+    const marca=(lat,lon,col,txt)=>{ const q=mapaXY(lat,lon); g.beginPath(); g.arc(q.x,q.y,9,0,Math.PI*2); g.fillStyle='#fff'; g.fill(); g.beginPath(); g.arc(q.x,q.y,6.5,0,Math.PI*2); g.fillStyle=col; g.fill(); g.font='600 12px system-ui,sans-serif'; const w2=g.measureText(txt).width; const {W}=mapaTam(); const izq=q.x+12+w2+10>W-4; const lx=izq?q.x-12-w2-10:q.x+12; g.fillStyle='rgba(0,0,0,.7)'; g.fillRect(lx,q.y-9,w2+10,18); g.fillStyle='#fff'; g.fillText(txt,lx+5,q.y+4); };
+    marca(r.origen.lat,r.origen.lon,'#E03A2A','Corral'); marca(r.destino.lat,r.destino.lon,'#04522B',r.destino.nombre); g.restore(); }
+  if(MAPA.modo==='ruta'){ const r=MAPA.ruta; $('mapa-msg').textContent = r ? 'Ruta de '+fmt(r.km,1)+' km hasta '+r.destino.nombre+(r.extra?' (incluye '+r.extraTxt+')':'')+' · en línea recta '+fmt(r.recta,1)+' km. ¿Es coherente?' : ''; }
+  else { const c=ponerCentroInfo(); $('mapa-msg').textContent=(c.fuera?'⚠ El punto tiene que quedar dentro del Paraguay. ':faltan?'Sin señal: el mapa no se ve. Use ◎ para ir a su ubicación y apriete OK. ':'Mueva el mapa hasta que el punto rojo quede sobre el corral y apriete OK. ')+MAPA.lat.toFixed(5)+', '+MAPA.lon.toFixed(5); $('mapa-msg').classList.toggle('aviso-py',c.fuera); }
+  $('mapa-attr').textContent=TILE_ATTR[MAPA.capa]; }
+function ponerCentroInfo(){ return {fuera:!dentroPY(MAPA.lat,MAPA.lon)}; }
+function mapaPan(dx,dy){ const z=MAPA.z; const x=lon2x(MAPA.lon,z)-dx/256, y=lat2y(MAPA.lat,z)-dy/256; MAPA.lon=x2lon(x,z); MAPA.lat=Math.max(-85,Math.min(85,y2lat(y,z))); centrarEnPY(); MAPA.movido=true; pedirDibujo(); }
+function mapaZoomEn(px,py,z2){ z2=Math.max(Z_MIN,Math.min(Z_MAX,z2)); const ll=mapaLL(px,py); const {W,H}=mapaTam(); MAPA.z=z2; const x=lon2x(ll.lon,z2)-(px-W/2)/256, y=lat2y(ll.lat,z2)-(py-H/2)/256; MAPA.lon=x2lon(x,z2); MAPA.lat=Math.max(-85,Math.min(85,y2lat(y,z2))); centrarEnPY(); pedirDibujo(); }
+function mapaAjustar(pts){ const {W,H}=mapaTam(); let a=90,b=-90,c=180,d=-180; pts.forEach(p=>{ a=Math.min(a,p.lat); b=Math.max(b,p.lat); c=Math.min(c,p.lon); d=Math.max(d,p.lon); }); MAPA.lat=(a+b)/2; MAPA.lon=(c+d)/2; let z=Z_MAX; while(z>Z_MIN){ const w2=(lon2x(d,z)-lon2x(c,z))*256, h2=(lat2y(a,z)-lat2y(b,z))*256; if(w2<W*0.8 && h2<H*0.75) break; z-=0.25; } MAPA.z=z; }
+function mapaModo(modo){ MAPA.modo=modo; $('mapa-pin').classList.toggle('hidden', modo!=='punto'); $('mapa-acc-punto').classList.toggle('hidden', modo!=='punto'); $('mapa-acc-ruta').classList.toggle('hidden', modo!=='ruta'); $('mapa-titulo').textContent = modo==='ruta' ? '🛣 Ruta calculada' : '📍 ¿Dónde está el corral?'; }
+function abrirModal(){ $('mapa-modal').classList.add('on'); $('mapa-capa').textContent=MAPA.capa==='sat'?'🗺 Mapa':'🛰 Satélite'; }
+function openMapa(inicial, cb){ mapaModo('punto'); MAPA.cb=cb; abrirModal(); MAPA.movido=false; if(inicial){ MAPA.lat=inicial.lat; MAPA.lon=inicial.lon; MAPA.z=Math.max(MAPA.z,16); } else { MAPA.z=Math.max(MAPA.z,15); gpsActual().then(u=>{ if(!MAPA.movido && dentroPY(u.lat,u.lon)){ MAPA.lat=u.lat; MAPA.lon=u.lon; MAPA.z=16; pedirDibujo(); } }).catch(()=>{}); } centrarEnPY(); setTimeout(mapaDraw,50); }
+function openRuta(ruta, alAceptar, alManual){ mapaModo('ruta'); MAPA.ruta=ruta; MAPA.cbRuta={alAceptar, alManual}; abrirModal(); setTimeout(()=>{ mapaAjustar(ruta.coords.map(c=>({lat:c[1],lon:c[0]})).concat([ruta.origen, ruta.destino])); mapaDraw(); },50); $('ruta-ok').textContent='✓ Usar '+fmt(ruta.km,1)+' km'; }
+function closeMapa(){ $('mapa-modal').classList.remove('on'); MAPA.cb=null; MAPA.cbRuta=null; MAPA.ptrs.clear(); MAPA.gesto=null; }
 (function(){ const cv=$('mapa-canvas'); const rel=e=>{ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; };
-  cv.addEventListener('pointerdown',e=>{ const q=rel(e), p=mapaXY(MAPA.plat,MAPA.plon); const cerca=Math.hypot(q.x-p.x,q.y-(p.y-25))<38||Math.hypot(q.x-p.x,q.y-p.y)<26; MAPA.drag={x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,pin:cerca,movio:false,ox:q.x-p.x,oy:q.y-p.y}; try{ cv.setPointerCapture(e.pointerId); }catch(x){} if(cerca) mapaDraw(); });
-  cv.addEventListener('pointermove',e=>{ const d=MAPA.drag; if(!d) return; const dx=e.clientX-d.x, dy=e.clientY-d.y; d.x=e.clientX; d.y=e.clientY; if(Math.hypot(e.clientX-d.x0,e.clientY-d.y0)>6) d.movio=true; if(d.pin){ const q=rel(e); const ll=mapaLL(q.x-d.ox,q.y-d.oy); ponerPin(ll.lat,ll.lon); MAPA.movido=true; mapaDraw(); } else mapaPan(dx,dy); });
-  const up=e=>{ const d=MAPA.drag; MAPA.drag=null; if(d&&!d.pin&&!d.movio&&e&&e.type==='pointerup'){ const q=rel(e); const ll=mapaLL(q.x,q.y); ponerPin(ll.lat,ll.lon); MAPA.movido=true; } mapaDraw(); };
-  cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up); cv.addEventListener('wheel',e=>{ e.preventDefault(); MAPA.z=Math.max(6,Math.min(18,MAPA.z+(e.deltaY<0?1:-1))); mapaDraw(); },{passive:false});
-  $('mapa-zin').addEventListener('click',()=>{ MAPA.z=Math.min(18,MAPA.z+1); mapaDraw(); }); $('mapa-zout').addEventListener('click',()=>{ MAPA.z=Math.max(6,MAPA.z-1); mapaDraw(); });
-  $('mapa-loc').addEventListener('click',async()=>{ try{ const u=await gpsActual(); if(!dentroPY(u.lat,u.lon)){ toast('Su ubicación está fuera del Paraguay: marque el punto en el mapa.'); return; } MAPA.lat=u.lat; MAPA.lon=u.lon; MAPA.plat=u.lat; MAPA.plon=u.lon; MAPA.movido=true; MAPA.z=Math.max(MAPA.z,16); mapaDraw(); }catch(e){ toast(e.message); } });
-  $('mapa-cancel').addEventListener('click',closeMapa); $('mapa-capa').addEventListener('click',()=>{ MAPA.capa=MAPA.capa==='sat'?'mapa':'sat'; $('mapa-capa').textContent=MAPA.capa==='sat'?'🗺 Mapa':'🛰 Satélite'; mapaDraw(); });
-  $('mapa-ok').addEventListener('click',()=>{ ponerPin(MAPA.plat,MAPA.plon); const u={lat:+MAPA.plat.toFixed(6), lon:+MAPA.plon.toFixed(6), precision_m:null, fuente:'mapa', tomada_en:new Date().toISOString()}; const cb=MAPA.cb; closeMapa(); if(cb) cb(u); toast('Ubicación elegida'); });
-  window.addEventListener('resize',()=>{ if($('mapa-modal').classList.contains('on')) mapaDraw(); }); })();
+  const dosDedos=()=>{ const p=[...MAPA.ptrs.values()]; return { mx:(p[0].x+p[1].x)/2, my:(p[0].y+p[1].y)/2, d:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y) }; };
+  cv.addEventListener('pointerdown',e=>{ try{ cv.setPointerCapture(e.pointerId); }catch(x){} const q=rel(e); MAPA.ptrs.set(e.pointerId,{x:q.x,y:q.y,x0:q.x,y0:q.y,t0:Date.now()}); if(MAPA.ptrs.size===2) MAPA.gesto=Object.assign(dosDedos(),{z0:MAPA.z}); });
+  cv.addEventListener('pointermove',e=>{ const p=MAPA.ptrs.get(e.pointerId); if(!p) return; const q=rel(e);
+    if(MAPA.ptrs.size>=2 && MAPA.gesto){ p.x=q.x; p.y=q.y; const g2=dosDedos(); mapaPan(g2.mx-MAPA.gesto.mx, g2.my-MAPA.gesto.my); if(MAPA.gesto.d>10 && g2.d>10){ mapaZoomEn(g2.mx,g2.my, MAPA.z+Math.log2(g2.d/MAPA.gesto.d)); } MAPA.gesto.mx=g2.mx; MAPA.gesto.my=g2.my; MAPA.gesto.d=g2.d; p.movio=true; return; }
+    const dx=q.x-p.x, dy=q.y-p.y; p.x=q.x; p.y=q.y; if(Math.hypot(q.x-p.x0,q.y-p.y0)>6) p.movio=true; if(MAPA.ptrs.size===1) mapaPan(dx,dy); });
+  const fin=e=>{ const p=MAPA.ptrs.get(e.pointerId); MAPA.ptrs.delete(e.pointerId); if(MAPA.ptrs.size<2) MAPA.gesto=null;
+    if(p && !p.movio && e.type==='pointerup' && Date.now()-p.t0<300 && MAPA.ptrs.size===0){ const ahora=Date.now(), u=MAPA.ultTap; if(u && ahora-u.t<350 && Math.hypot(u.x-p.x,u.y-p.y)<40){ mapaZoomEn(p.x,p.y,MAPA.z+1); MAPA.ultTap=null; } else MAPA.ultTap={t:ahora,x:p.x,y:p.y}; } };
+  cv.addEventListener('pointerup',fin); cv.addEventListener('pointercancel',fin);
+  cv.addEventListener('wheel',e=>{ e.preventDefault(); const q=rel(e); mapaZoomEn(q.x,q.y,MAPA.z+(e.deltaY<0?0.5:-0.5)); },{passive:false});
+  cv.addEventListener('dblclick',e=>e.preventDefault());
+  const centroZoom=dz=>{ const {W,H}=mapaTam(); mapaZoomEn(W/2,H/2,MAPA.z+dz); };
+  $('mapa-zin').addEventListener('click',()=>centroZoom(1)); $('mapa-zout').addEventListener('click',()=>centroZoom(-1));
+  $('mapa-loc').addEventListener('click',async()=>{ try{ const u=await gpsActual(); if(!dentroPY(u.lat,u.lon)){ toast('Su ubicación está fuera del Paraguay: marque el punto en el mapa.'); return; } MAPA.lat=u.lat; MAPA.lon=u.lon; MAPA.movido=true; MAPA.z=Math.max(MAPA.z,16); pedirDibujo(); }catch(e){ toast(e.message); } });
+  $('mapa-cancel').addEventListener('click',closeMapa);
+  $('mapa-capa').addEventListener('click',()=>{ MAPA.capa=MAPA.capa==='sat'?'mapa':'sat'; $('mapa-capa').textContent=MAPA.capa==='sat'?'🗺 Mapa':'🛰 Satélite'; pedirDibujo(); });
+  $('mapa-ok').addEventListener('click',()=>{ if(!dentroPY(MAPA.lat,MAPA.lon)){ toast('El punto tiene que quedar dentro del Paraguay.'); return; } const u={lat:+MAPA.lat.toFixed(6), lon:+MAPA.lon.toFixed(6), precision_m:null, fuente:'mapa', tomada_en:new Date().toISOString()}; const cb=MAPA.cb; closeMapa(); if(cb) cb(u); toast('Ubicación elegida'); });
+  $('ruta-ok').addEventListener('click',()=>{ const c=MAPA.cbRuta; closeMapa(); if(c&&c.alAceptar) c.alAceptar(); });
+  $('ruta-manual').addEventListener('click',()=>{ const c=MAPA.cbRuta; closeMapa(); if(c&&c.alManual) c.alManual(); });
+  window.addEventListener('resize',()=>{ if($('mapa-modal').classList.contains('on')) pedirDibujo(); }); })();
 
-/* ---------- distancia por ruta (OSRM) ---------- */
+/* ---------- distancia por ruta (OSRM) con la ruta dibujada en el mapa ---------- */
 function haversine(a,b,c,d){ const R=6371, r=x=>x*Math.PI/180, dLa=r(c-a), dLo=r(d-b); const h=Math.sin(dLa/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+function simplificar(coords, max){ if(coords.length<=max) return coords.map(c=>[+c[0].toFixed(5),+c[1].toFixed(5)]); const paso=(coords.length-1)/(max-1); const out=[]; for(let i=0;i<max;i++) out.push(coords[Math.round(i*paso)]); return out.map(c=>[+c[0].toFixed(5),+c[1].toFixed(5)]); }
 function kmTxt(F){ const k=num(F.km); return k>0 ? fmt(k,1)+' km'+(F.km_fuente==='ruta'?' (por ruta)':' (cargados a mano)') : ''; }
-function renderKm(){ $('km-status').textContent = F.km_detalle || (F.km_fuente==='manual' ? 'Kilómetros cargados a mano.' : 'Con la ubicación del corral y el destino, el app calcula los kilómetros por ruta (no en línea recta). Sin señal, cárguelos a mano.'); }
+function renderKm(){ $('km-status').textContent = F.km_detalle || (F.km_fuente==='manual' ? 'Kilómetros cargados a mano.' : 'Con la ubicación del corral y el destino, el app calcula los km por ruta y muestra el camino en el mapa. Si no es coherente, escríbalos a mano.'); $('btn-ver-ruta').classList.toggle('hidden', !(F.ruta&&F.ruta.coords&&F.ruta.coords.length)); }
 let kmEnCurso=false;
-async function calcKm(silencioso){ const e=estancia(F.destino); const st=$('km-status');
-  if(!e||e.sinCoord){ if(!silencioso) st.textContent = e&&e.sinCoord ? 'Esta estancia todavía no tiene coordenadas cargadas: escriba los km a mano.' : 'Elija primero la estancia de destino.'; return; }
-  if(!F.ubicacion){ if(!silencioso) st.textContent='Falta la ubicación del corral: toque "Usar mi ubicación" o márquela en el mapa.'; return; }
-  if(!navigator.onLine){ if(!silencioso) st.textContent='Sin señal: cargue los km a mano; con señal podrá calcularlos por ruta.'; return; }
+async function calcKm(mostrar){ const e=estancia(F.destino); const st=$('km-status');
+  if(!e||e.sinCoord){ if(mostrar) st.textContent = e&&e.sinCoord ? 'Esta estancia todavía no tiene coordenadas cargadas: escriba los km a mano.' : 'Elija primero la estancia de destino.'; return; }
+  if(!F.ubicacion){ if(mostrar) st.textContent='Falta la ubicación del corral: toque "Usar mi ubicación" o márquela en el mapa.'; return; }
+  if(!navigator.onLine){ if(mostrar) st.textContent='Sin señal: escriba los km a mano; con señal podrá calcularlos por ruta.'; return; }
   if(kmEnCurso) return; kmEnCurso=true; const l=F; st.textContent='Calculando la ruta…'; const ctrl=new AbortController(), to=setTimeout(()=>ctrl.abort(),20000);
-  try{ const url='https://router.project-osrm.org/route/v1/driving/'+l.ubicacion.lon+','+l.ubicacion.lat+';'+e.lng+','+e.lat+'?overview=false'; const r=await fetch(url,{signal:ctrl.signal}); if(!r.ok) throw new Error('http '+r.status); const j=await r.json(); if(j.code!=='Ok'||!j.routes||!j.routes.length) throw new Error('sin ruta');
-    const ruta=j.routes[0].distance/1000, total=ruta+(e.extra||0), rect=haversine(l.ubicacion.lat,l.ubicacion.lon,e.lat,e.lng);
-    if(F===l){ F.km=Math.round(total*10)/10; F.km_fuente='ruta'; F.km_detalle='Por ruta: '+fmt(ruta,1)+' km hasta '+e.ref+(e.extra?' + '+e.extraTxt:'')+' · en línea recta: '+fmt(rect,1)+' km · calculado '+fmtDT(new Date().toISOString()); $('f-km').value=F.km; dirty=true; renderKm(); renderFlete(); } }
-  catch(err){ if(F===l){ st.textContent='No se pudo calcular la ruta (sin conexión o servicio no disponible). Cargue los km a mano.'; } }
+  try{ const url='https://router.project-osrm.org/route/v1/driving/'+l.ubicacion.lon+','+l.ubicacion.lat+';'+e.lng+','+e.lat+'?overview=full&geometries=geojson'; const r=await fetch(url,{signal:ctrl.signal}); if(!r.ok) throw new Error('http '+r.status); const j=await r.json(); if(j.code!=='Ok'||!j.routes||!j.routes.length) throw new Error('sin ruta');
+    const ruta=j.routes[0].distance/1000, total=Math.round((ruta+(e.extra||0))*10)/10, rect=haversine(l.ubicacion.lat,l.ubicacion.lon,e.lat,e.lng);
+    const R={ coords:simplificar(j.routes[0].geometry.coordinates,400), km:total, km_ruta:ruta, recta:rect, extra:e.extra||0, extraTxt:e.extraTxt||'', origen:{lat:l.ubicacion.lat, lon:l.ubicacion.lon}, destino:{lat:e.lat, lon:e.lng, nombre:e.n}, calculada_en:new Date().toISOString() };
+    if(F!==l) return; const aceptar=()=>{ F.ruta=R; F.km=total; F.km_fuente='ruta'; F.km_detalle='Por ruta: '+fmt(ruta,1)+' km hasta '+e.ref+(e.extra?' + '+e.extraTxt:'')+' · en línea recta: '+fmt(rect,1)+' km'; $('f-km').value=F.km; dirty=true; renderKm(); renderFlete(); };
+    if(mostrar) openRuta(R, ()=>{ aceptar(); toast('Distancia: '+fmt(total,1)+' km por ruta'); }, ()=>{ F.ruta=R; F.km=''; F.km_fuente='manual'; F.km_detalle='La ruta calculada ('+fmt(total,1)+' km) no era coherente: km cargados a mano.'; $('f-km').value=''; dirty=true; renderKm(); renderFlete(); $('f-km').focus(); toast('Escriba los km a mano.'); });
+    else if(F.km_fuente!=='manual') aceptar(); else renderKm(); }
+  catch(err){ if(F===l) st.textContent='No se pudo calcular la ruta (sin conexión o servicio no disponible). Escriba los km a mano.'; }
   finally{ clearTimeout(to); kmEnCurso=false; } }
-$('btn-km').addEventListener('click',()=>calcKm(false));
+$('btn-km').addEventListener('click',()=>calcKm(true));
+$('btn-ver-ruta').addEventListener('click',()=>{ if(F.ruta) openRuta(F.ruta, ()=>{ if(F.km_fuente!=='ruta'){ F.km=F.ruta.km; F.km_fuente='ruta'; F.km_detalle='Por ruta: '+fmt(F.ruta.km,1)+' km · en línea recta: '+fmt(F.ruta.recta,1)+' km'; $('f-km').value=F.km; dirty=true; renderKm(); renderFlete(); } }, ()=>{ F.km_fuente='manual'; F.km=''; $('f-km').value=''; F.km_detalle='La ruta calculada ('+fmt(F.ruta.km,1)+' km) no era coherente: km cargados a mano.'; dirty=true; renderKm(); renderFlete(); $('f-km').focus(); }); });
 
 /* ---------- fotos ---------- */
 function compressImage(file, maxSide, quality){ return new Promise((res,rej)=>{ const url=URL.createObjectURL(file); const img=new Image();
   img.onload=()=>{ let w=img.naturalWidth,h=img.naturalHeight; const s=Math.min(1,maxSide/Math.max(w,h)); w=Math.round(w*s); h=Math.round(h*s); const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg',quality)); };
   img.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error('No se pudo leer la foto')); }; img.src=url; }); }
-function setFotoUI(key){ const th=$('thumb-'+key); const du=key==='animales'?F.foto_animales:F.foto_factura; if(du){ th.src=du; th.classList.add('has'); } else { th.classList.remove('has'); th.removeAttribute('src'); } $('btn-quitar-'+key).classList.toggle('hidden',!du); }
-document.querySelectorAll('[data-cam],[data-gal]').forEach(btn=>btn.addEventListener('click',()=>{ const key=btn.dataset.cam||btn.dataset.gal; const inp=$('file-'+key); if(!inp) return; if(btn.dataset.cam!==undefined) inp.setAttribute('capture','environment'); else inp.removeAttribute('capture'); inp.click(); }));
-$('file-animales').addEventListener('change',async e=>{ const f=e.target.files[0]; if(!f) return; try{ F.foto_animales=await compressImage(f,1400,0.78); dirty=true; setFotoUI('animales'); toast('Foto cargada'); }catch(err){ toast(err.message); } e.target.value=''; });
-$('file-factura').addEventListener('change',async e=>{ const f=e.target.files[0]; if(!f) return; try{ F.foto_factura=await compressImage(f,2000,0.85); dirty=true; setFotoUI('factura'); iaInvalidar(); toast('Foto de la factura cargada'); }catch(err){ toast(err.message); } e.target.value=''; });
-$('btn-quitar-animales').addEventListener('click',()=>{ F.foto_animales=null; dirty=true; setFotoUI('animales'); });
-$('btn-quitar-factura').addEventListener('click',()=>{ F.foto_factura=null; dirty=true; setFotoUI('factura'); iaInvalidar(); });
 
-/* ---------- guías de traslado + COTA (una o varias por factura; cada guía va con su COTA) ---------- */
-function nuevaGuia(){ return {id:uuid(), nro:'', foto:null, cota_nro:'', cota_foto:null}; }
-const parOk = g => !!(g && g.foto && g.cota_foto);
-function docsOkDe(f){ return !!(f && f.foto_factura && (f.guias||[]).some(parOk)); }
-function seccionFoto(titulo, ayuda, du, onFile, onQuitar){ const d=document.createElement('div'); d.className='photo';
-  d.innerHTML='<label class="f"><span class="req"></span><span class="hint"></span></label><img class="thumb doc'+(du?' has':'')+'" alt=""><div class="row"><button class="btn" type="button" data-cam>📷 Sacar foto</button><button class="btn" type="button" data-gal>🖼 Galería</button><button class="btn danger'+(du?'':' hidden')+'" type="button" data-quitar>✕ Quitar</button></div><input type="file" accept="image/*" style="display:none">';
-  d.querySelector('.req').textContent=titulo; d.querySelector('.hint').textContent=ayuda; if(du) d.querySelector('img').src=du; const inp=d.querySelector('input[type=file]');
-  d.querySelector('[data-cam]').addEventListener('click',()=>{ inp.setAttribute('capture','environment'); inp.click(); }); d.querySelector('[data-gal]').addEventListener('click',()=>{ inp.removeAttribute('capture'); inp.click(); });
-  inp.addEventListener('change',async e=>{ const f=e.target.files[0]; if(!f) return; try{ await onFile(await compressImage(f,2000,0.85)); }catch(err){ toast(err.message); } e.target.value=''; });
-  d.querySelector('[data-quitar]').addEventListener('click',onQuitar); return d; }
-function campoTexto(titulo, ayuda, valor, ph, onInput){ const l=document.createElement('label'); l.className='f'; l.innerHTML='<span></span><span class="hint"></span><input type="text" inputmode="numeric" autocomplete="off">'; l.children[0].textContent=titulo; l.children[1].textContent=ayuda; const inp=l.querySelector('input'); inp.placeholder=ph; inp.value=valor||''; inp.addEventListener('input',()=>onInput(inp.value.trim())); return l; }
-function renderGuias(){ const box=$('guias-list'); box.innerHTML='';
-  F.guias.forEach((g,i)=>{ const d=document.createElement('div'); d.className='guia-bloque'; d.innerHTML='<div class="head"><span>Guía y COTA '+(i+1)+'</span>'+(F.guias.length>1?'<button class="btn small danger" type="button" data-del>✕ Quitar</button>':'')+'</div>';
-    d.appendChild(seccionFoto('Foto de la guía de traslado', 'Guía de traslado y transferencia de ganado (GE2): se ven el Nº de orden, el vendedor y su RUC, la cantidad y el Nº de factura.', g.foto, async du=>{ g.foto=du; dirty=true; iaInvalidar(); renderGuias(); toast('Foto de la guía cargada'); }, ()=>{ g.foto=null; dirty=true; iaInvalidar(); renderGuias(); }));
-    d.appendChild(campoTexto('Nº de guía', 'Se completa solo con la lectura de la IA; puede corregirlo.', g.nro, 'Ej.: 91203446', v=>{ g.nro=v; dirty=true; }));
-    d.appendChild(seccionFoto('Foto de la COTA', 'Certificado del SENACSA con el código QR: se ven el propietario, el establecimiento de origen, el destino, el consignatario y la validez.', g.cota_foto, async du=>{ g.cota_foto=du; dirty=true; iaInvalidar(); renderGuias(); toast('Foto de la COTA cargada'); }, ()=>{ g.cota_foto=null; dirty=true; iaInvalidar(); renderGuias(); }));
-    d.appendChild(campoTexto('Nº de COTA', 'Número del código de barras de la COTA; se completa con la IA.', g.cota_nro, 'Ej.: 00101267002442', v=>{ g.cota_nro=v; dirty=true; }));
-    const del=d.querySelector('[data-del]'); if(del) del.addEventListener('click',()=>{ if((g.foto||g.cota_foto) && !confirm('¿Quitar la guía y COTA '+(i+1)+' con sus fotos?')) return; F.guias.splice(i,1); dirty=true; iaInvalidar(); renderGuias(); });
+/* ---------- documentos: N facturas, N guías de traslado, N COTAs (solo fotos; los números los lee la IA) ---------- */
+const DOC_TIPOS = [ {k:'facturas', titulo:'Facturas', uno:'Factura', ayuda:'Debe verse el timbrado y su vigencia, el RUC, el cliente, las cantidades, el total y la liquidación del IVA.'},
+  {k:'guias', titulo:'Guías de traslado (GE2)', uno:'Guía', ayuda:'Guía de traslado y transferencia de ganado: Nº de orden, vendedor, cantidad y Nº de factura.'},
+  {k:'cotas', titulo:'COTAs (certificado SENACSA con QR)', uno:'COTA', ayuda:'Una por cada guía: propietario, establecimiento de origen, destino, consignatario y validez.'} ];
+function docsOkDe(f){ const d=f&&f.docs; return !!(d && d.facturas.length && d.guias.length && d.cotas.length); }
+function numeroLeido(k,i){ const ex=w&&w.ia&&w.ia.resultado&&w.ia.resultado.extraido; const a=ex&&ex[k]; return a&&a[i]&&a[i].nro?String(a[i].nro):''; }
+function renderDocs(){ DOC_TIPOS.forEach(t=>{ const box=$('docs-'+t.k); const lista=F.docs[t.k]; box.innerHTML='';
+  const h=document.createElement('div'); h.className='head'; h.innerHTML='<b></b><span class="badge"></span>'; h.querySelector('b').textContent=t.titulo; const bd=h.querySelector('.badge'); bd.textContent=lista.length?lista.length+(lista.length===1?' foto':' fotos'):'obligatoria'; bd.className='badge '+(lista.length?'ok':'warn'); box.appendChild(h);
+  const ay=document.createElement('div'); ay.className='hint'; ay.textContent=t.ayuda; box.appendChild(ay);
+  if(lista.length){ const g=document.createElement('div'); g.className='doc-thumbs'; lista.forEach((d,i)=>{ const th=document.createElement('div'); th.className='th'; th.innerHTML='<img alt=""><button type="button" aria-label="Quitar">✕</button><span></span>'; th.querySelector('img').src=d.foto; const nro=numeroLeido(t.k,i); th.querySelector('span').textContent=t.uno+' '+(i+1)+(nro?' · '+nro:'');
+      th.querySelector('button').addEventListener('click',()=>{ if(!confirm('¿Quitar la foto de '+t.uno.toLowerCase()+' '+(i+1)+'?')) return; lista.splice(i,1); dirty=true; iaInvalidar(); renderDocs(); }); g.appendChild(th); }); box.appendChild(g); }
+  const row=document.createElement('div'); row.className='row'; row.innerHTML='<button class="btn" type="button" data-cam>📷 '+(lista.length?'Otra ':'')+t.uno.toLowerCase()+'</button><button class="btn" type="button" data-gal>🖼 Galería</button>'; const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.multiple=true; inp.style.display='none';
+  row.querySelector('[data-cam]').addEventListener('click',()=>{ inp.setAttribute('capture','environment'); inp.multiple=false; inp.click(); }); row.querySelector('[data-gal]').addEventListener('click',()=>{ inp.removeAttribute('capture'); inp.multiple=true; inp.click(); });
+  inp.addEventListener('change',async e=>{ const fs=Array.from(e.target.files||[]); e.target.value=''; let n=0; for(const f of fs){ try{ lista.push({id:uuid(), foto:await compressImage(f,2000,0.85)}); n++; }catch(err){ toast(err.message); } } if(n){ dirty=true; iaInvalidar(); renderDocs(); toast(n===1?t.uno+' cargada':n+' fotos cargadas'); } });
+  box.appendChild(row); box.appendChild(inp); }); }
+
+/* ---------- cuentas bancarias (una o varias) ---------- */
+function bancoCompleto(b){ return !!(b && (b.titular||'').trim() && (b.entidad||'').trim() && (b.cuenta||'').trim() && (b.doc||'').trim()); }
+function renderBancos(){ const box=$('bancos-list'); box.innerHTML='';
+  F.bancos.forEach((b,i)=>{ const d=document.createElement('div'); d.className='banco-bloque'; d.innerHTML='<div class="head"><span>Cuenta '+(i+1)+'</span>'+(F.bancos.length>1?'<button class="btn small danger" type="button" data-del>✕ Quitar</button>':'')+'</div>'
+      +'<label class="f"><span class="req">Titular de la cuenta</span><input type="text" data-k="titular" autocomplete="off" placeholder="Como figura en el banco"></label>'
+      +'<label class="f"><span class="req">Banco / entidad</span><input type="text" data-k="entidad" autocomplete="off" list="bancos-dl" placeholder="Ej.: ueno bank, Itaú, BNF…"></label>'
+      +'<div class="row"><label class="f"><span class="req">Nº de cuenta</span><input type="text" data-k="cuenta" inputmode="text" autocomplete="off"></label><label class="f"><span>Moneda</span><select data-k="moneda"><option value="GS">Guaraníes (₲)</option><option value="USD">Dólares (US$)</option></select></label></div>'
+      +'<div class="row"><label class="f"><span class="req">Documento</span><select data-k="doc_tipo"><option value="RUC">RUC</option><option value="CI">Cédula</option><option value="Otro">Otro</option></select></label><label class="f"><span class="req">Número</span><input type="text" data-k="doc" inputmode="text" autocomplete="off" placeholder="Ej.: 80002149-5"></label></div>'
+      +'<label class="f"><span>Alias (si el banco lo usa)</span><input type="text" data-k="alias" autocomplete="off" placeholder="Opcional"></label>';
+    d.querySelectorAll('[data-k]').forEach(el=>{ el.value=b[el.dataset.k]||''; const h=()=>{ b[el.dataset.k]=el.value; dirty=true; if(['titular','doc','doc_tipo'].includes(el.dataset.k)) iaInvalidar(); }; el.addEventListener('input',h); el.addEventListener('change',h); });
+    const del=d.querySelector('[data-del]'); if(del) del.addEventListener('click',()=>{ if(!confirm('¿Quitar la cuenta '+(i+1)+'?')) return; F.bancos.splice(i,1); dirty=true; iaInvalidar(); renderBancos(); });
     box.appendChild(d); }); }
-$('btn-add-guia').addEventListener('click',()=>{ F.guias.push(nuevaGuia()); dirty=true; renderGuias(); });
+$('btn-add-banco').addEventListener('click',()=>{ F.bancos.push(nuevoBanco()); dirty=true; renderBancos(); });
+(function(){ const dl=$('bancos-dl'); BANCOS.forEach(b=>{ const o=document.createElement('option'); o.value=b; dl.appendChild(o); }); })();
 
 /* ---------- video (queda en el teléfono y se sube por partes al Drive) ---------- */
 $('btn-video-cam').addEventListener('click',()=>{ const i=$('file-video'); i.setAttribute('capture','environment'); i.click(); });
@@ -1186,33 +1262,36 @@ $('btn-quitar-video').addEventListener('click',async()=>{ if(!confirm('¿Quitar 
 function renderVideo(){ const v=w&&w.video; $('video-lim').textContent=VIDEO_MAX_MB+' MB'; $('video-chip').classList.toggle('hidden',!v); const m=$('video-msg'); if(!v){ m.classList.add('hidden'); return; } $('video-nombre').textContent=v.nombre+' · '+fmtBytes(v.tamano); m.classList.remove('hidden'); m.className='msg '+(v.estado==='subido'?'ok':v.estado==='error'?'bad':'');
   m.textContent = v.estado==='subido' ? '✓ Subido al Drive. El PDF lleva el botón para abrirlo.' : v.estado==='subiendo' ? '☁ Subiendo al Drive… parte '+(v.partes_subidas||0)+' de '+Math.ceil(v.tamano/VIDEO_PARTE) : v.estado==='error' ? 'No se pudo subir ('+(v.error||'')+'): se reintenta solo con señal.' : '☁ Se sube al Drive cuando haya señal.'; }
 
-/* ---------- verificación IA (guía + factura + datos bancarios) ---------- */
-function iaHashDe(F){ const huella=du=>(du||'').length+':'+(du||'').slice(-40); const g=F.guias.map(x=>huella(x.foto)+'/'+huella(x.cota_foto)).join('|'); const f=(F.foto_factura||'').length+':'+(F.foto_factura||'').slice(-40); const c=calc(F); const e=estancia(F.destino); return [g,f,F.proveedor,F.destino,e?e.cod:'',c.cab,Math.round(c.pagar),F.banco.titular,F.banco.doc_tipo,F.banco.doc,F.fecha].join('§'); }
+/* ---------- verificación IA (facturas + guías + COTAs + cuentas) ---------- */
+function iaHashDe(F){ const h=du=>(du||'').length+':'+(du||'').slice(-40); const d=F.docs||{facturas:[],guias:[],cotas:[]}; const c=calc(F); const e=estancia(F.destino);
+  return [d.facturas.map(x=>h(x.foto)).join('|'), d.guias.map(x=>h(x.foto)).join('|'), d.cotas.map(x=>h(x.foto)).join('|'), F.proveedor, F.destino, e?e.cod:'', c.cab, Math.round(c.pagar), (F.bancos||[]).map(b=>[b.titular,b.doc_tipo,b.doc].join('/')).join('|'), F.fecha].join('§'); }
 function iaHash(){ return iaHashDe(F); }
 function iaInvalidar(){ if(w&&w.ia&&w.ia.estado!=='pendiente'){ w.ia={estado:'pendiente', resultado:w.ia.resultado||null, hash:null}; } renderIA(); }
 function iaFotosOk(){ return docsOkDe(F); }
-function iaEstado(){ if(!w||!w.ia) return 'pendiente'; if(!iaFotosOk()) return 'sin_fotos'; if(w.ia.hash && w.ia.hash!==iaHash() && w.ia.estado!=='verificando') return 'pendiente'; return w.ia.estado||'pendiente'; }
+function iaEstado(){ if(!w||!w.ia) return iaFotosOk()?'pendiente':'sin_fotos'; if(!iaFotosOk()) return 'sin_fotos'; if(w.ia.hash && w.ia.hash!==iaHash() && w.ia.estado!=='verificando') return 'pendiente'; return w.ia.estado||'pendiente'; }
 function renderIA(){ if(!w) return; const est=iaEstado(); const b=$('ia-badge'); b.className='badge '+(IA_CLS[est]||''); b.textContent=IA_LABEL[est]||est; const box=$('ia-checks'); box.innerHTML=''; const ex=$('ia-extraido'); ex.classList.add('hidden'); ex.innerHTML='';
   const r=w.ia&&w.ia.resultado; $('btn-ia').disabled = est==='verificando' || !iaFotosOk(); $('btn-ia').textContent = est==='verificando' ? '⏳ Verificando…' : (r?'🔎 Verificar de nuevo':'🔎 Verificar ahora');
-  if(est==='sin_fotos'){ box.innerHTML='<div class="ia-check pend"><span class="ico">·</span><span>Cargue la foto de la factura y de al menos una guía con su COTA para verificar.</span></div>'; return; }
+  if(est==='sin_fotos'){ const d=F.docs; const f=[]; if(!d.facturas.length) f.push('la factura'); if(!d.guias.length) f.push('la guía'); if(!d.cotas.length) f.push('la COTA'); box.innerHTML='<div class="ia-check pend"><span class="ico">·</span><span>Falta la foto de '+f.join(', ')+' para verificar.</span></div>'; return; }
   if(!r){ box.innerHTML='<div class="ia-check pend"><span class="ico">·</span><span>'+(navigator.onLine?'Toque "Verificar ahora" o espere: se verifica sola al guardar.':'Sin señal: la verificación se hace sola cuando vuelva la conexión. Puede seguir cargando y guardar como borrador.')+'</span></div>'; return; }
-  if(est==='pendiente' && r) box.innerHTML='<div class="ia-check warn"><span class="ico">!</span><span>Cambió algo desde la última verificación (fotos o datos): vuelva a verificar.</span></div>';
+  if(est==='pendiente') box.innerHTML='<div class="ia-check warn"><span class="ico">!</span><span>Cambió algo desde la última verificación (fotos o datos): vuelva a verificar.</span></div>';
   (r.checks||[]).forEach(c=>{ const d=document.createElement('div'); d.className='ia-check '+(c.estado==='ok'?'ok':c.estado==='warn'?'warn':c.estado==='bad'?'bad':'pend'); d.innerHTML='<span class="ico">'+(c.estado==='ok'?'✓':c.estado==='warn'?'⚠':c.estado==='bad'?'✗':'–')+'</span><span><b></b><span></span></span>'; d.querySelector('b').textContent=c.titulo; d.querySelector('span span').textContent=c.detalle||''; box.appendChild(d); });
   if(r.resumen){ const d=document.createElement('div'); d.className='hint'; d.textContent=r.resumen; box.appendChild(d); }
-  const e=r.extraido||{}; const filas=[]; const fa=e.factura||{}; if(fa.nro) filas.push(['Factura',fa.nro+(fa.fecha_emision?' · '+fa.fecha_emision:'')]); if(fa.timbrado) filas.push(['Timbrado',fa.timbrado+(fa.vigencia_fin?' · vigente hasta '+fa.vigencia_fin:'')]); if(fa.emisor_nombre) filas.push(['Emisor',fa.emisor_nombre+(fa.emisor_ruc?' · RUC '+fa.emisor_ruc:'')]); if(fa.total!=null) filas.push(['Total factura',gs(fa.total)+(fa.iva5!=null?' · IVA 5 % '+gs(fa.iva5):'')]);
-  (e.guias||[]).forEach((g,i)=>{ if(g.nro) filas.push(['Guía '+(i+1),g.nro+(g.total_animales!=null?' · '+g.total_animales+' animales':'')+(g.factura_nro?' · factura '+g.factura_nro:'')]); if(g.vendedor_nombre) filas.push(['Vendedor (guía)',g.vendedor_nombre+(g.vendedor_ruc?' · RUC '+g.vendedor_ruc:'')]); });
-  (e.cotas||[]).forEach((c,i)=>{ if(c.nro) filas.push(['COTA '+(i+1),c.nro+(c.guia_nro?' · guía '+c.guia_nro:'')+(c.total_animales!=null?' · '+c.total_animales+' animales':'')+(c.validez_hasta?' · válida hasta '+c.validez_hasta:'')]); if(c.propietario) filas.push(['Propietario (COTA)',c.propietario+(c.propietario_codigo?' · '+c.propietario_codigo:'')]); if(c.establecimiento_nombre||c.establecimiento_codigo) filas.push(['Establecimiento origen',(c.establecimiento_nombre||'')+(c.establecimiento_codigo?' · cód. '+c.establecimiento_codigo:'')+(c.distrito?' · '+c.distrito:'')+(c.departamento?' · '+c.departamento:'')]); if(c.destino_nombre||c.destino_codigo) filas.push(['Destino en la COTA',(c.destino_nombre||'')+(c.destino_codigo?' · cód. '+c.destino_codigo:'')]); });
+  const e=r.extraido||{}; const filas=[];
+  (e.facturas||[]).forEach((fa,i)=>{ filas.push(['Factura '+(i+1),(fa.nro||'—')+(fa.cantidad_cabezas!=null?' · '+fa.cantidad_cabezas+' cab.':'')+(fa.total!=null?' · '+gs(fa.total):'')]); if(fa.emisor_nombre) filas.push(['Emisor',fa.emisor_nombre+(fa.emisor_ruc?' · RUC '+fa.emisor_ruc:'')]); if(fa.timbrado) filas.push(['Timbrado',fa.timbrado+(fa.vigencia_fin?' · vigente hasta '+fmtDate(fa.vigencia_fin):'')]); });
+  (e.guias||[]).forEach((g,i)=>{ filas.push(['Guía '+(i+1),(g.nro||'—')+(g.total_animales!=null?' · '+g.total_animales+' animales':'')+(g.factura_nro?' · factura '+g.factura_nro:'')]); });
+  (e.cotas||[]).forEach((c,i)=>{ filas.push(['COTA '+(i+1),(c.nro||'—')+(c.guia_nro?' · guía '+c.guia_nro:'')+(c.total_animales!=null?' · '+c.total_animales+' animales':'')+(c.destino_nombre?' · '+c.destino_nombre:'')]); });
   if(filas.length){ ex.classList.remove('hidden'); filas.forEach(([k,v])=>{ const dt=document.createElement('dt'); dt.textContent=k; const dd=document.createElement('dd'); dd.textContent=v; ex.appendChild(dt); ex.appendChild(dd); }); } }
 let iaEnCurso=false;
-async function verificarIA(id, manual){ const w0=await dbGet(id); if(!w0||!w0.form) return false; const f=w0.form; if(!docsOkDe(f)) return false;
-  if(!manual && w0.ia && ['ok','advertencias','errores'].includes(w0.ia.estado) && w0.ia.hash && w0.ia.hash===iaHashDe(f)) return true; /* ya verificada con estas mismas fotos y datos: no se vuelve a gastar en la API */
+async function verificarIA(id, manual){ const w0=await dbGet(id); if(!w0||!w0.form) return false; const f=migrarForm(w0.form); if(!docsOkDe(f)) return false;
+  if(!manual && w0.ia && ['ok','advertencias','errores'].includes(w0.ia.estado) && w0.ia.hash && w0.ia.hash===iaHashDe(f)) return true; /* ya verificada con estas mismas fotos y datos */
   if(!navigator.onLine){ if(manual) toast('Sin señal: la verificación se hace sola cuando vuelva la conexión.'); return false; } if(iaEnCurso) return false; iaEnCurso=true;
-  const hash = (w0.id===formId) ? iaHash() : (w0.ia&&w0.ia.hash)||null; const c=calcDe(f);
+  const hash=iaHashDe(f); const c=calc(f); const b64of=du=>du.split(',')[1];
   await enCola(async()=>{ const x=await dbGet(id); if(x){ x.ia=Object.assign({},x.ia||{},{estado:'verificando'}); await dbPut(x); } }); if(w&&w.id===id){ w.ia=Object.assign({},w.ia||{},{estado:'verificando'}); renderIA(); }
-  try{ const body={ tipo:'verificar_ia', id, datos:{ proveedor:f.proveedor, destino:f.destino, destino_codigo:(estancia(f.destino)||{}).cod||'', cantidad:c.cab, total:Math.round(c.pagar), iva5:Math.round(c.iva5), precio_modo:f.precio_modo, precio:num(f.precio), fecha:f.fecha, banco:f.banco, factura_nro:f.factura_nro, guias_nro:f.guias.filter(parOk).map(g=>g.nro||''), cotas_nro:f.guias.filter(parOk).map(g=>g.cota_nro||'') }, factura:f.foto_factura.split(',')[1], guias:f.guias.filter(parOk).map(g=>({guia:g.foto.split(',')[1], cota:g.cota_foto.split(',')[1]})) };
-    const j=await post(body,{timeout:120000}); const res=j.ia||{};
-    await enCola(async()=>{ const x=await dbGet(id); if(!x) return; x.ia={estado:res.estado||'error_servicio', resultado:res, hash:hash||iaHashDe(x.form), verificado_en:new Date().toISOString()}; const ex=res.extraido||{}; if(ex.factura&&ex.factura.nro&&!x.form.factura_nro) x.form.factura_nro=ex.factura.nro; const pares=x.form.guias.filter(parOk); (ex.guias||[]).forEach((g,i)=>{ if(pares[i]&&g.nro&&!pares[i].nro) pares[i].nro=String(g.nro); }); (ex.cotas||[]).forEach((c,i)=>{ if(pares[i]&&c.nro&&!pares[i].cota_nro) pares[i].cota_nro=String(c.nro); }); logEntry(x,'verificación IA: '+(res.estado||'?'), res.resumen||null); x.nube=Object.assign({},x.nube||{},{pendiente:true}); await dbPut(x); if(w&&w.id===id){ w.ia=x.ia; F.factura_nro=x.form.factura_nro; const locales=F.guias.filter(parOk); x.form.guias.filter(parOk).forEach((g,i)=>{ if(locales[i]){ locales[i].nro=g.nro; locales[i].cota_nro=g.cota_nro; } }); $('f-factura-nro').value=F.factura_nro||''; renderGuias(); } });
-    if(w&&w.id===id&&formActivo()) renderIA(); programarSubida(3000); if(res.estado==='errores') toast('La IA encontró diferencias: revise la verificación.'); else if(res.estado==='advertencias') toast('Verificación con advertencias.'); else if(manual) toast('Verificación IA: todo coincide.'); renderHome(); return true; }
+  try{ const body={ tipo:'verificar_ia', version:2, id, datos:{ proveedor:f.proveedor, destino:f.destino, destino_codigo:(estancia(f.destino)||{}).cod||'', cantidad:c.cab, total:Math.round(c.pagar), facturar:(facturacion(f)||{fa:{}}).fa.total||null, precio_modo:f.precio_modo, precio:num(f.precio), fecha:f.fecha, bancos:f.bancos },
+      facturas:f.docs.facturas.map(d=>b64of(d.foto)), guias:f.docs.guias.map(d=>b64of(d.foto)), cotas:f.docs.cotas.map(d=>b64of(d.foto)) };
+    const j=await post(body,{timeout:180000}); const res=j.ia||{};
+    await enCola(async()=>{ const x=await dbGet(id); if(!x) return; x.ia={estado:res.estado||'error_servicio', resultado:res, hash, verificado_en:new Date().toISOString()}; logEntry(x,'verificación IA: '+(res.estado||'?'), res.resumen||null); x.nube=Object.assign({},x.nube||{},{pendiente:true}); await dbPut(x); if(w&&w.id===id){ w.ia=x.ia; } });
+    if(w&&w.id===id&&formActivo()){ renderIA(); renderDocs(); } programarSubida(3000); if(res.estado==='errores') toast('La IA encontró diferencias: revise la verificación.'); else if(res.estado==='advertencias') toast('Verificación con advertencias.'); else if(manual) toast('Verificación IA: todo coincide.'); renderHome(); return true; }
   catch(e){ await enCola(async()=>{ const x=await dbGet(id); if(x){ x.ia=Object.assign({},x.ia||{},{estado:'error_servicio', error:String(e.message||e), intento_en:new Date().toISOString()}); await dbPut(x); if(w&&w.id===id) w.ia=x.ia; } }); if(w&&w.id===id&&formActivo()) renderIA(); if(manual) toast('No se pudo verificar: '+(e.message||e)); return false; }
   finally{ iaEnCurso=false; } }
 $('btn-ia').addEventListener('click',async()=>{ if(!formId) return; try{ await enCola(()=>saveDraft(true)); }catch(e){} verificarIA(formId,true); });
@@ -1222,44 +1301,50 @@ $('btn-ia').addEventListener('click',async()=>{ if(!formId) return; try{ await e
    Ciclo del formulario: abrir / aplicar / guardar (autoguardado), validación y datos faltantes,
    registro exportable, pantalla de la orden, inicio y barra de acciones.
    ===================================================================================================== */
+function formDe(x){ if(!x) return nuevaOrden(); x.form=migrarForm(x.form); return x.form; }
 function pintarComisionistas(){ const sel=$('f-comisionista'); const lista=(usuarios.comisionistas||[]).slice(); if(esAdmin()){ (usuarios.admins||[]).forEach(a=>{ if(!lista.includes(a)) lista.push(a); }); }
   if(sesion && !lista.includes(sesion.nombre)) lista.unshift(sesion.nombre); if(F.comisionista && F.comisionista!=='Otro…' && !lista.includes(F.comisionista)) lista.push(F.comisionista);
   fillSelect(sel, lista.concat(esAdmin()?['Otro…']:[]), 'Seleccionar…'); sel.disabled=!esAdmin(); }
 function applyForm(){ pintarComisionistas(); const sel=$('f-comisionista'); const lista=Array.from(sel.options).map(o=>o.value); if(F.comisionista && !lista.includes(F.comisionista)){ sel.value='Otro…'; $('f-comisionista-otro').value=F.comisionista; F.comisionista_otro=F.comisionista; } else sel.value=F.comisionista||''; $('wrap-com-otro').classList.toggle('hidden', sel.value!=='Otro…'); if(sel.value==='Otro…') $('f-comisionista-otro').value=F.comisionista_otro||'';
+  fillSelect($('f-destino'), ESTANCIAS.map(e=>({v:e.n, t:e.n+(e.cod?' — cód. '+e.cod:'')})).concat([{v:DESTINO_A_DEFINIR,t:DESTINO_A_DEFINIR}]), 'Seleccionar…');
   Object.keys(FIELDS).forEach(id=>{ if(id==='f-comisionista-otro') return; const v=getP(F,FIELDS[id]); $(id).value = v==null?'':v; });
-  Object.keys(SEGS).forEach(id=>setSeg($(id), getP(F,SEGS[id])||''));
-  fillSelect($('f-destino'), ESTANCIAS.map(e=>({v:e.n, t:e.n+(e.cod?' — cód. '+e.cod:'')})).concat([{v:DESTINO_A_DEFINIR,t:DESTINO_A_DEFINIR}]), 'Seleccionar…'); $('f-destino').value=F.destino||''; showDestino();
-  renderUbic(); renderKm(); renderFlete(); renderPrecioModo(); renderComModo(); renderPesos(); setFotoUI('animales'); setFotoUI('factura'); renderGuias(); renderVideo(); renderIA(); pintarCambioHint(); }
-function showDestino(){ const e=estancia(F.destino); $('destino-cod').textContent = e ? (e.cod?'Código SENACSA del establecimiento: '+e.cod:'Sin código cargado todavía') + (e.sinCoord?' · sin coordenadas: cargue los km a mano':'') : (F.destino===DESTINO_A_DEFINIR?'Destino a definir: el flete se calcula cuando se elija la estancia.':''); }
-function renderPrecioModo(){ const kg=F.precio_modo!=='cabeza'; $('lbl-precio').textContent = kg?'Precio por kg (₲)':'Precio por cabeza (₲)'; $('wrap-peso-est').classList.toggle('hidden',kg); }
-function renderComModo(){ const m=F.com_modo; $('wrap-com-tasa').classList.toggle('hidden', m==='sin'); $('lbl-com-tasa').textContent = m==='cab'?'Monto por cabeza (₲, IVA incluido)':m==='kg'?'Monto por kg (₲, IVA incluido)':'Porcentaje sobre el total de la compra (%)'; $('f-com-tasa').placeholder = m==='pct'?'Ej.: 2,5':'0'; }
+  Object.keys(SEGS).forEach(id=>setSeg($(id), getP(F,SEGS[id])||'')); showDestino();
+  renderUbic(); renderKm(); renderFlete(); renderPrecioModo(); renderComModo(); renderPesos(); renderDocs(); renderBancos(); renderVideo(); renderIA(); pintarCambioHint(); }
+function showDestino(){ const e=estancia(F.destino); $('destino-cod').textContent = e ? (e.cod?'Código SENACSA del establecimiento: '+e.cod:'Sin código cargado todavía') + (e.sinCoord?' · sin coordenadas: escriba los km a mano':'') : (F.destino===DESTINO_A_DEFINIR?'Destino a definir: el flete se calcula cuando se elija la estancia.':''); }
+function renderPrecioModo(){ const kg=F.precio_modo!=='cabeza'; $('lbl-precio').textContent = kg?'Precio por kg vivo (₲, IVA incluido)':'Precio por cabeza (₲, IVA incluido)'; $('wrap-hoja').classList.toggle('hidden',!kg); $('wrap-peso-est').classList.toggle('hidden',kg); $('pesaje-titulo').textContent = kg?'3 · Hoja de pesaje (kg)':'3 · Peso promedio estimado'; }
+function renderComModo(){ const m=F.com_modo; $('wrap-com-tasa').classList.toggle('hidden', !m || m==='sin'); $('lbl-com-tasa').textContent = m==='pct'?'Porcentaje sobre el total de la compra (%)':'Monto por cabeza (₲, IVA incluido)'; $('f-com-tasa').placeholder = m==='pct'?'Ej.: 2,5':'0'; }
 function pintarCambioHint(){ $('cambio-hint').textContent = cfg.cambio ? 'Cambio del '+fmtDate(cfg.cambio_fecha)+' según '+(cfg.cambio_fuente||'el servidor')+': '+fmt(cfg.cambio,0)+' ₲/US$. Puede corregirlo.' : 'Se completa solo con señal; puede corregirlo.'; }
 /* DOM -> F */
 Object.keys(FIELDS).forEach(id=>{ const el=$(id); const h=()=>{ setP(F, FIELDS[id], el.value); dirty=true;
-  if(id==='f-destino'){ showDestino(); if(F.km_fuente==='ruta'){ F.km=''; F.km_fuente=''; F.km_detalle=''; $('f-km').value=''; } renderKm(); renderFlete(); if(navigator.onLine && F.ubicacion) calcKm(true); iaInvalidar(); }
-  if(id==='f-km'){ F.km_fuente = el.value?'manual':''; F.km_detalle=''; renderKm(); renderFlete(); }
+  if(id==='f-destino'){ showDestino(); if(F.km_fuente==='ruta'){ F.km=''; F.km_fuente=''; F.km_detalle=''; F.ruta=null; $('f-km').value=''; } renderKm(); renderFlete(); if(navigator.onLine && F.ubicacion) calcKm(false); iaInvalidar(); }
+  if(id==='f-km'){ F.km_fuente = el.value?'manual':''; if(F.km_fuente==='manual' && !/no era coherente/.test(F.km_detalle||'')) F.km_detalle=''; renderKm(); renderFlete(); }
   if(id==='f-flete-precio'){ F.flete.auto=false; }
-  if(['f-precio','f-cambio','f-com-tasa','f-cabezas','f-peso-est','f-flete-precio','f-flete-viajes'].includes(id)){ renderTotales(); if(id==='f-precio') renderPesos(); if(id==='f-precio'||id==='f-cabezas') iaInvalidar(); }
-  if(id==='f-proveedor'||id==='f-bco-titular'||id==='f-bco-doc'||id==='f-bco-doc-tipo'||id==='f-fecha') iaInvalidar(); };
+  if(['f-precio','f-cambio','f-com-tasa','f-cantidad','f-peso-est','f-flete-precio','f-flete-viajes','f-cab-camion'].includes(id)){ renderTotales(); if(id==='f-precio') renderPesos(); if(id==='f-precio'||id==='f-cantidad') iaInvalidar(); }
+  if(id==='f-proveedor'||id==='f-fecha') iaInvalidar(); };
   el.addEventListener('input',h); el.addEventListener('change',h); });
 $('f-comisionista').addEventListener('change',()=>{ const v=$('f-comisionista').value; $('wrap-com-otro').classList.toggle('hidden', v!=='Otro…'); F.comisionista = v==='Otro…' ? ($('f-comisionista-otro').value||'').trim() : v; dirty=true; if(v==='Otro…') $('f-comisionista-otro').focus(); });
 $('f-comisionista-otro').addEventListener('input',()=>{ F.comisionista_otro=$('f-comisionista-otro').value; F.comisionista=F.comisionista_otro.trim(); dirty=true; });
-Object.keys(SEGS).forEach(id=>{ if(id==='seg-flete') return; $(id).addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; setP(F, SEGS[id], b.dataset.v); setSeg($(id), b.dataset.v); dirty=true; if(id==='seg-retorno') renderFlete(); if(id==='seg-precio-modo'){ renderPrecioModo(); renderPesos(); iaInvalidar(); } if(id==='seg-com-modo'){ renderComModo(); renderTotales(); } }); });
-(function(){ const dl=$('bancos-list'); BANCOS.forEach(b=>{ const o=document.createElement('option'); o.value=b; dl.appendChild(o); }); })();
+Object.keys(SEGS).forEach(id=>{ if(id==='seg-flete') return; $(id).addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; setP(F, SEGS[id], b.dataset.v); setSeg($(id), b.dataset.v); dirty=true; if(id==='seg-retorno') renderFlete(); if(id==='seg-precio-modo'){ renderPrecioModo(); renderPesos(); iaInvalidar(); } if(id==='seg-com-modo'){ renderComModo(); renderTotales(); if(F.com_modo!=='sin') setTimeout(()=>$('f-com-tasa').focus(),50); } }); });
 
 /* ---------- validación: datos obligatorios ---------- */
-function faltantesDe(f){ const out=[]; const add=(p,campo,titulo)=>out.push({pagina:p, campo, titulo}); const c=calc(f);
-  if(!(f.comisionista||'').trim()) add(1,'comisionista','Comisionista'); if(!(f.proveedor||'').trim()) add(1,'proveedor','Proveedor'); if(!f.categoria) add(1,'categoria','Categoría'); if(!f.fecha) add(1,'fecha','Fecha'); if(!f.hora) add(1,'hora','Hora de pesaje'); if(!(f.localidad||'').trim()) add(1,'localidad','Localidad / estancia de origen');
-  if(!f.ubicacion) add(1,'ubicacion','Ubicación del corral (GPS o mapa)'); if(!(f.carimbo||'').trim()) add(1,'carimbo','Carimbo'); if(!f.sola_marca) add(1,'sola_marca','¿Sola marca?'); if(!f.raza) add(1,'raza','Raza'); if(!f.foto_animales) add(1,'foto_animales','Foto de los animales carimbados');
-  if(!f.destino) add(1,'destino','Estancia de destino'); else if(f.destino!==DESTINO_A_DEFINIR){ if(!(num(f.km)>0)) add(1,'km','Distancia por ruta (km)'); if(!f.flete.prov) add(1,'flete','Transportadora'); else { if(f.flete.prov==='Otro' && !(f.flete.otro||'').trim()) add(1,'flete_otro','Nombre de la transportadora'); if(f.flete.precio==='' || f.flete.precio==null) add(1,'flete_precio','Precio por viaje del flete'); if(!(num(f.flete.viajes)>0)) add(1,'flete_viajes','Cantidad de viajes'); } }
-  if(f.precio_modo==='kg'){ if(!f.pesos.length) add(1,'pesos','Pesaje animal por animal'); } else { if(!(c.cab>0)) add(1,'cabezas','Cantidad de cabezas'); if(!(c.peso>0)) add(1,'peso_est','Peso promedio (pesadas o estimado)'); }
-  if(!(num(f.precio)>0)) add(1,'precio', f.precio_modo==='kg'?'Precio por kg':'Precio por cabeza'); if(!(num(f.cambio)>0)) add(1,'cambio','Cambio del día (₲ por US$)');
+function faltantesDe(f){ f=migrarForm(f); const out=[]; const add=(p,campo,titulo)=>out.push({pagina:p, campo, titulo}); const c=calc(f);
+  if(!(f.comisionista||'').trim()) add(1,'comisionista','Comisionista'); if(!(f.proveedor||'').trim()) add(1,'proveedor','Proveedor'); if(!f.categoria) add(1,'categoria','Categoría'); if(!(c.cab>0)) add(1,'cantidad','Cantidad de animales');
+  if(!f.fecha) add(1,'fecha','Fecha'); if(!f.hora) add(1,'hora','Hora de pesaje'); if(!(f.localidad||'').trim()) add(1,'localidad','Localidad / estancia de origen');
+  if(!f.ubicacion) add(1,'ubicacion','Ubicación del corral (GPS o mapa)'); if(!(f.carimbo||'').trim()) add(1,'carimbo','Carimbo'); if(!f.sola_marca) add(1,'sola_marca','¿Sola marca?'); if(!f.raza) add(1,'raza','Raza');
+  if(!(num(f.precio)>0)) add(1,'precio', f.precio_modo==='kg'?'Precio por kg vivo':'Precio por cabeza');
+  if(f.precio_modo==='kg'){ if(!c.pesados) add(1,'pesos','Hoja de pesaje'); else if(c.cab && c.pesados<c.cab) add(1,'pesos','Hoja de pesaje: faltan '+(c.cab-c.pesados)+' pesadas ('+c.pesados+' de '+c.cab+')'); else if(c.cab && c.pesados>c.cab) add(1,'pesos','Hoja de pesaje: hay '+c.pesados+' pesadas para '+c.cab+' animales'); }
+  else if(!(num(f.peso_est)>0)) add(1,'peso_est','Peso promedio estimado');
+  if(!f._tiene_video) add(1,'video','Video del lote carimbado');
+  if(!f.destino) add(1,'destino','Estancia de destino'); else if(f.destino!==DESTINO_A_DEFINIR){ if(!(num(f.km)>0)) add(1,'km','Distancia por ruta (km)'); if(!f.flete.prov) add(1,'flete','Transportadora'); else { if(f.flete.prov==='Otro' && !(f.flete.otro||'').trim()) add(1,'flete_otro','Nombre de la transportadora'); if(!(num(f.flete.precio)>0)) add(1,'flete_precio','Precio por viaje del flete'); if(!(num(f.flete.viajes)>0)) add(1,'flete_viajes','Cantidad de viajes'); } }
   if(!f.com_modo) add(1,'com_modo','Forma de la comisión'); else if(f.com_modo!=='sin' && !(num(f.com_tasa)>0)) add(1,'com_tasa','Monto de la comisión');
-  if(!(f.guias||[]).length) add(2,'guia','Foto de la guía y de la COTA'); (f.guias||[]).forEach((g,i)=>{ const n=f.guias.length>1?' '+(i+1):''; if(!g.foto) add(2,'guia_'+i,'Foto de la guía de traslado'+n); if(!g.cota_foto) add(2,'cota_'+i,'Foto de la COTA'+n); }); if(!f.foto_factura) add(2,'factura','Foto de la factura');
-  const b=f.banco||{}; if(!(b.titular||'').trim()) add(2,'bco_titular','Titular de la cuenta'); if(!(b.entidad||'').trim()) add(2,'bco_entidad','Banco / entidad'); if(!(b.cuenta||'').trim()) add(2,'bco_cuenta','Nº de cuenta'); if(!(b.doc||'').trim()) add(2,'bco_doc','Documento del titular ('+(b.doc_tipo||'RUC')+')');
+  if(!(num(f.cambio)>0)) add(1,'cambio','Cambio del día (₲ por US$)');
+  const d=f.docs; if(!d.facturas.length) add(2,'facturas','Foto de la factura'); if(!d.guias.length) add(2,'guias','Foto de la guía de traslado'); if(!d.cotas.length) add(2,'cotas','Foto de la COTA'); else if(d.cotas.length<d.guias.length) add(2,'cotas','Foto de la COTA de cada guía ('+d.cotas.length+' COTAs para '+d.guias.length+' guías)');
+  f.bancos.forEach((b,i)=>{ const n=f.bancos.length>1?' (cuenta '+(i+1)+')':''; if(!(b.titular||'').trim()) add(2,'bco_titular_'+i,'Titular de la cuenta'+n); if(!(b.entidad||'').trim()) add(2,'bco_entidad_'+i,'Banco / entidad'+n); if(!(b.cuenta||'').trim()) add(2,'bco_cuenta_'+i,'Nº de cuenta'+n); if(!(b.doc||'').trim()) add(2,'bco_doc_'+i,'Documento del titular'+n); });
   return out; }
+function faltantesActual(){ return faltantesOrden({form:F, video:w&&w.video}); }
+function faltantesOrden(x){ const f=formDe(x); f._tiene_video=!!x.video; const r=faltantesDe(f); delete f._tiene_video; return r; }
 function estadoOrdenDe(x){ // estado que se muestra: lo decidido por el servidor manda; si no, borrador/completa según faltantes
-  if(x.pago && x.pago.decision && x.pago.decision.estado) return x.pago.decision.estado==='autorizada'?'autorizada':'rechazada'; if(x.pago && x.pago.enviado_en) return 'enviada'; return faltantesDe(x.form).length?'borrador':'completa'; }
+  if(x.pago && x.pago.decision && x.pago.decision.estado) return x.pago.decision.estado==='autorizada'?'autorizada':'rechazada'; if(x.pago && x.pago.enviado_en) return 'enviada'; return faltantesOrden(x).length?'borrador':'completa'; }
 
 /* ---------- guardar (autoguardado cada 2 s, al salir y al minimizar) y abrir ---------- */
 async function saveDraft(silent){ if(!w||!formId) return false; const dirtyAntes=dirty; dirty=false;
@@ -1268,25 +1353,30 @@ async function saveDraft(silent){ if(!w||!formId) return false; const dirtyAntes
 async function autoGuardar(){ if(autoOff||autoEnCurso||!dirty||!formActivo()) return; autoEnCurso=true; try{ await enCola(()=>saveDraft(true)); }catch(e){ console.warn('autoguardado',e); } finally{ autoEnCurso=false; } }
 async function pintarAutosave(){ const el=$('autosave'); if(!el||!w) return; const n=w.nube||{}; el.className='autosave'; el.textContent='✓ Guardado en el teléfono '+hhmm(w.guardado_en||w.actualizado_en||new Date().toISOString())+' · '+(n.subido_en&&!n.pendiente?'☁ copia en la nube '+hhmm(n.subido_en):(!navigator.onLine||n.error)?'☁ la copia se sube sola cuando haya señal':'☁ subiendo copia…'); }
 function resetForm(){ F=nuevaOrden(); pagina=1; dirty=false; autoOff=false; $('edit-banner').classList.add('hidden'); $('err1').classList.add('hidden'); $('err2').classList.add('hidden'); }
-async function nueva(){ resetForm(); formId=uuid(); const ahora=new Date().toISOString(); w={id:formId, esquema:ESQUEMA, creado_en:ahora, actualizado_en:ahora, creado_por:sesion?sesion.nombre:null, rol_creador:sesion?sesion.rol:null, comisionista:F.comisionista, form:F, video:null, ia:{estado:'pendiente'}, pago:null, version:1, historial:[], nube:{pendiente:false}}; applyForm(); renderPagina(); show('scr-form'); pintarAutosave(); traerCambio(); }
-async function abrir(x){ resetForm(); formId=x.id; w=x; F=JSON.parse(JSON.stringify(x.form||nuevaOrden())); if(!F.guias||!F.guias.length) F.guias=[nuevaGuia()]; F.guias.forEach(g=>{ if(g.cota_foto===undefined) g.cota_foto=null; if(g.cota_nro===undefined) g.cota_nro=''; }); if(!F.banco) F.banco=nuevaOrden().banco; if(!F.flete) F.flete=nuevaOrden().flete; if(!F.pesos) F.pesos=[];
+async function nueva(){ resetForm(); formId=uuid(); const ahora=new Date().toISOString(); w={id:formId, esquema:ESQUEMA, creado_en:ahora, actualizado_en:ahora, creado_por:sesion?sesion.nombre:null, rol_creador:sesion?sesion.rol:null, comisionista:F.comisionista, form:F, video:null, ia:{estado:'pendiente'}, pago:null, version:1, historial:[], nube:{pendiente:false}}; applyForm(); renderPagina(); show('scr-form'); pintarAutosave(); traerCambio(); setTimeout(()=>{ if(!$('f-cantidad').value) $('f-proveedor').focus(); },100); }
+async function abrir(x){ resetForm(); formId=x.id; w=x; F=migrarForm(JSON.parse(JSON.stringify(x.form||nuevaOrden()))); w.form=F;
   const bn=$('edit-banner'); if(x.pago&&x.pago.enviado_en){ bn.className='msg warn'; bn.textContent='Esta orden ya fue enviada a pago'+(x.pago.decision&&x.pago.decision.estado?' y '+(x.pago.decision.estado==='autorizada'?'autorizada':'devuelta')+' por '+x.pago.decision.admin:'')+'. Si la modifica, hay que volver a enviarla: los administradores reciben el aviso y la planilla se actualiza.'; bn.classList.remove('hidden'); }
   if(x.ajena){ bn.className='msg'; bn.textContent='Orden de '+(x.comisionista||x.creado_por||'otro usuario')+' (recuperada de la nube). Los cambios se guardan con su nombre.'; bn.classList.remove('hidden'); }
   applyForm(); renderPagina(); show('scr-form'); pintarAutosave(); if(!num(F.cambio)) traerCambio(); }
 function renderPagina(){ $('pag1').style.display = pagina===1?'':'none'; $('pag2').style.display = pagina===2?'':'none'; const st=$('steps'); st.innerHTML = '<span class="done"></span><span class="'+(pagina===2?'done':'')+'"></span><b>'+pagina+' / 2 · '+(pagina===1?'Datos operativos':'Documentación y pago')+'</b>';
-  $('ab-back').textContent = pagina===1?'⌂ Salir':'‹ Volver'; $('ab-next').textContent = pagina===1?'Documentación ›':'Guardar y revisar ›'; window.scrollTo(0,0); if(pagina===2) renderIA(); }
+  $('ab-back').textContent = pagina===1?'⌂ Salir':'‹ Volver'; $('ab-next').textContent = pagina===1?'Documentación ›':'Guardar y revisar ›'; window.scrollTo(0,0); if(pagina===2){ renderDocs(); renderIA(); } }
 function showErr(id, list){ const el=$(id); if(!list.length){ el.classList.add('hidden'); return; } el.classList.remove('hidden'); el.innerHTML='<b>Faltan datos obligatorios:</b><ul class="falt-list">'+list.map(x=>'<li>'+esc(x.titulo)+'</li>').join('')+'</ul><span style="font-size:13px">Puede seguir igual: la orden queda como <b>borrador</b> y el PDF lleva anotado lo que falta.</span>'; }
 
 /* ---------- registro exportable (JSON / servidor / PDF) ---------- */
-function buildRecord(x){ const f=x.form; const c=calc(f); const e=estancia(f.destino); const falt=faltantesDe(f); const iaE=x.ia||{};
+function docsLeidos(x){ const ex=(x.ia&&x.ia.resultado&&x.ia.resultado.extraido)||{}; const f=formDe(x); const nros=(k)=>(ex[k]||[]).map(d=>d&&d.nro?String(d.nro):'').filter(Boolean);
+  return { facturas:(ex.facturas||[]).map(fa=>({ numero:fa.nro||'', cabezas:fa.cantidad_cabezas!=null?fa.cantidad_cabezas:null, total:fa.total!=null?fa.total:null, emisor:fa.emisor_nombre||'', ruc:fa.emisor_ruc||'' })), guias:(ex.guias||[]).map(g=>({ numero:g.nro||'', factura:g.factura_nro||'', animales:g.total_animales!=null?g.total_animales:null })), cotas:(ex.cotas||[]).map(c=>({ numero:c.nro||'', guia:c.guia_nro||'', animales:c.total_animales!=null?c.total_animales:null })),
+    fotos:{ facturas:f.docs.facturas.length, guias:f.docs.guias.length, cotas:f.docs.cotas.length }, facturas_nro:nros('facturas').join('; '), guias_nro:nros('guias').join('; '), cotas_nro:nros('cotas').join('; ') }; }
+function buildRecord(x){ const f=formDe(x); const c=calc(f); const e=estancia(f.destino); const falt=faltantesOrden(x); const iaE=x.ia||{}; const dl=docsLeidos(x); const fx=facturacion(f);
   return { esquema:ESQUEMA, id:x.id, version:x.version||1, app_version:APP_VERSION, creado_en:x.creado_en, actualizado_en:x.actualizado_en, creado_por:x.creado_por||null, editado_por:x.editado_por||null, estado_orden:estadoOrdenDe(x),
     comisionista:f.comisionista, proveedor:f.proveedor, categoria:f.categoria, categoria_planilla:CATEGORIA_PLANILLA[f.categoria]||String(f.categoria||'').toUpperCase(), fecha:f.fecha, hora:f.hora, localidad:f.localidad, ubicacion:f.ubicacion, carimbo:f.carimbo, sola_marca:f.sola_marca, raza:f.raza,
-    destino:f.destino, destino_codigo:e?e.cod:'', km:num(f.km)||null, km_fuente:f.km_fuente||null, km_detalle:f.km_detalle||null, retorno_cargado:f.retorno==='si',
-    flete:{ transportadora:f.flete.prov==='Otro'?(f.flete.otro||'Otro'):f.flete.prov, otro:f.flete.prov==='Otro', precio_viaje:num(f.flete.precio), viajes:num(f.flete.viajes), total:c.flete, sugerencia:sugerenciaFlete(f) },
-    precio_modo:f.precio_modo, precio:num(f.precio), cambio:num(f.cambio)||null, pesos:f.pesos.slice(), cabezas:c.cab, peso_total_kg:+c.peso.toFixed(1), peso_promedio_kg:c.cab?+c.prom.toFixed(1):null, peso_estimado:f.precio_modo==='cabeza'&&!f.pesos.length?num(f.peso_est):null,
+    destino:f.destino, destino_codigo:e?e.cod:'', km:num(f.km)||null, km_fuente:f.km_fuente||null, km_detalle:f.km_detalle||null, ruta_km:f.ruta?f.ruta.km:null, retorno_cargado:f.retorno==='si',
+    flete:{ transportadora:f.flete.prov==='Otro'?(f.flete.otro||'Otro'):f.flete.prov, otro:f.flete.prov==='Otro', precio_viaje:num(f.flete.precio), viajes:num(f.flete.viajes), cabezas_por_camion:num(f.flete.cab_camion)||CAPACIDAD_VIAJE, total:c.flete, sugerencia:sugerenciaFlete(f), contacto:TRANSPORTISTAS[f.flete.prov]||null },
+    precio_modo:f.precio_modo, precio:num(f.precio), cambio:num(f.cambio)||null, pesos:f.precio_modo==='kg'?f.pesos.slice():[], cabezas:c.cab, pesados:c.pesados, peso_total_kg:+c.pesoRef.toFixed(1), peso_promedio_kg:c.prom?+c.prom.toFixed(1):null, peso_estimado:f.precio_modo==='cabeza'?num(f.peso_est):null,
     comision:{ modo:f.com_modo, tasa:num(f.com_tasa), descripcion:comDesc(f), total:Math.round(c.com), iva10:Math.round(c.iva10) },
-    totales:{ pagar:Math.round(c.pagar), iva5:Math.round(c.iva5), base5:Math.round(c.pagar-c.iva5), por_cabeza:Math.round(c.por_animal), por_kg:Math.round(c.por_kg), puesto_total:Math.round(c.puesto), puesto_cabeza:Math.round(c.puesto_cab), puesto_kg:Math.round(c.puesto_kg), usd:c.usd },
-    observaciones:f.obs||'', guias:f.guias.map((g,i)=>({nro:i, numero:g.nro||'', foto:!!g.foto, cota_numero:g.cota_nro||'', cota_foto:!!g.cota_foto})), factura_nro:f.factura_nro||'', banco:Object.assign({},f.banco), video:x.video?{nombre:x.video.nombre, tamano:x.video.tamano, url:x.video.url||null, estado:x.video.estado}:null,
+    totales:{ pagar:Math.round(c.pagar), iva5:Math.round(c.iva5), por_cabeza:Math.round(c.por_animal), por_kg:Math.round(c.por_kg), puesto_total:Math.round(c.puesto), puesto_cabeza:Math.round(c.puesto_cab), puesto_kg:Math.round(c.puesto_kg), usd:c.usd },
+    facturacion:fx, observaciones:f.obs||'', documentos:dl, factura_nro:dl.facturas_nro, guias_nro:dl.guias_nro, cotas_nro:dl.cotas_nro, guias:dl.guias.map(g=>({numero:g.numero})),
+    bancos:f.bancos.map(b=>({titular:b.titular, entidad:b.entidad, cuenta:b.cuenta, moneda:b.moneda, doc_tipo:b.doc_tipo, doc:b.doc, alias:b.alias})), banco:Object.assign({},f.bancos[0]||{}),
+    video:x.video?{nombre:x.video.nombre, tamano:x.video.tamano, url:x.video.url||null, estado:x.video.estado}:null,
     ia:{ estado:iaE.estado||'pendiente', verificado_en:iaE.verificado_en||null, resultado:iaE.resultado||null }, pago:x.pago||null, faltantes:falt, cantidad_faltantes:falt.length, historial:x.historial||[] }; }
 function fileNames(r){ const base='orden_compra_'+slug(r.proveedor||'proveedor')+'_'+(r.fecha||'sin_fecha')+'_'+r.id.slice(0,8)+(r.version>1?'_v'+r.version:''); return {json:base+'.json', pdf:base+'.pdf'}; }
 async function buildFiles(x){ const r=buildRecord(x); const n=fileNames(r); const pdfBytes=await makePdf(r,x); return { r, jsonFile:new File([new Blob([JSON.stringify(r,null,2)],{type:'application/json'})],n.json,{type:'application/json'}), pdfFile:new File([pdfBytes],n.pdf,{type:'application/pdf'}), pdfBytes }; }
@@ -1294,23 +1384,24 @@ function b64(bytes){ let s=''; const chunk=0x8000; for(let i=0;i<bytes.length;i+
 function download(file){ const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=file.name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },4000); }
 async function saveFile(file){ download(file); return 'saved'; }
 async function openPdf(file){ const u=URL.createObjectURL(file); const win=window.open(u,'_blank'); if(!win) return saveFile(file); return 'opened'; }
-function resumenWA(r){ const t=r.totales; let s='*ORDEN DE COMPRA DE GANADO — GRUPO YPOTI*\n'+ESTADO_LABEL[r.estado_orden].toUpperCase()+'\n\n'; s+='Proveedor: '+(r.proveedor||'-')+' · '+(r.categoria||'-')+'\nComisionista: '+(r.comisionista||'-')+'\nLocalidad: '+(r.localidad||'-')+'\nFecha: '+fmtDate(r.fecha)+' '+(r.hora||'')+' · Destino: '+(r.destino||'-')+(r.destino_codigo?' (cód. '+r.destino_codigo+')':'')+'\n';
+function resumenWA(r){ const t=r.totales; let s='*ORDEN DE COMPRA DE GANADO — GRUPO YPOTI*\n'+ESTADO_LABEL[r.estado_orden].toUpperCase()+'\n\n'; s+='Proveedor: '+(r.proveedor||'-')+' · '+(r.categoria||'-')+' · '+r.cabezas+' cabezas\nComisionista: '+(r.comisionista||'-')+'\nLocalidad: '+(r.localidad||'-')+'\nFecha: '+fmtDate(r.fecha)+' '+(r.hora||'')+' · Destino: '+(r.destino||'-')+(r.destino_codigo?' (cód. '+r.destino_codigo+')':'')+'\n';
   if(r.ubicacion) s+='Corral: https://www.google.com/maps?q='+r.ubicacion.lat+','+r.ubicacion.lon+'\n'; if(r.km) s+='Distancia: '+fmt(r.km,1)+' km · Flete: '+r.flete.transportadora+' '+gs(r.flete.precio_viaje)+' × '+r.flete.viajes+' = '+gs(r.flete.total)+'\n';
-  s+='Cabezas: '+r.cabezas+' · Peso total: '+fmt(r.peso_total_kg,1)+' kg · Promedio: '+(r.peso_promedio_kg!=null?fmt(r.peso_promedio_kg,1):'-')+' kg\n'; if(r.precio) s+=(r.precio_modo==='kg'?'Precio/kg: ':'Precio/cabeza: ')+gs(r.precio)+' · Total: '+gs(t.pagar)+' (IVA 5 % ÷21: '+gs(t.iva5)+')\nPor cabeza: '+gs(t.por_cabeza)+' · Por kg: '+gs(t.por_kg)+'\n';
-  if(r.comision.total) s+='Comisión ('+r.comision.descripcion+'): '+gs(r.comision.total)+' (IVA 10 % ÷11: '+gs(r.comision.iva10)+')\n'; if(t.puesto_total) s+='Puesto en estancia: '+gs(t.puesto_total)+' · '+gs(t.puesto_cabeza)+'/cab · '+gs(t.puesto_kg)+'/kg\n'; if(t.usd&&t.usd.total!=null) s+='En US$ (cambio '+fmt(r.cambio)+'): '+usd(t.usd.total)+' · '+usd(t.usd.cab)+'/cab · '+usd(t.usd.kg)+'/kg\n';
+  s+=(r.precio_modo==='kg'?'Compra por kg vivo · '+r.pesados+' de '+r.cabezas+' pesados':'Compra por cabeza (punta) · peso estimado')+' · promedio '+(r.peso_promedio_kg!=null?fmt(r.peso_promedio_kg,1):'-')+' kg\n'; if(r.precio) s+=(r.precio_modo==='kg'?'Precio/kg: ':'Precio/cabeza: ')+gs(r.precio)+' · Total: '+gs(t.pagar)+'\nPor cabeza: '+gs(t.por_cabeza)+(t.por_kg?' · Por kg: '+gs(t.por_kg):'')+'\n';
+  if(r.comision.total) s+='Comisión ('+r.comision.descripcion+'): '+gs(r.comision.total)+'\n'; if(t.puesto_total) s+='Puesto en estancia: '+gs(t.puesto_total)+' · '+gs(t.puesto_cabeza)+'/cab'+(t.puesto_kg?' · '+gs(t.puesto_kg)+'/kg':'')+'\n'; if(t.usd&&t.usd.total!=null) s+='En US$ (cambio '+fmt(r.cambio)+'): '+usd(t.usd.total)+' · '+usd(t.usd.cab)+'/cab'+(t.usd.kg!=null?' · '+usd(t.usd.kg)+'/kg':'')+'\n';
+  const fx=r.facturacion; if(fx){ s+='\n*Cómo facturar:* '+fx.fa.cantidad+' | '+fx.fa.descripcion+' | precio unitario '+gs(fx.fa.unitario)+' | columna 5 %: '+gs(fx.fa.total)+' | IVA 5 %: '+gs(fx.fa.iva5)+'\n'; if(fx.fc) s+='*Cómo facturar la comisión:* '+fx.fc.cantidad+' | '+fx.fc.descripcion+' | precio unitario '+gs(fx.fc.unitario)+' | columna 10 %: '+gs(fx.fc.total)+' | IVA 10 %: '+gs(fx.fc.iva10)+'\n'; }
   if(r.video&&r.video.url) s+='Video: '+r.video.url+'\n'; if(r.faltantes.length) s+='\n⚠ Faltan: '+r.faltantes.map(x=>x.titulo).join(', ')+'\n'; if(r.observaciones) s+='Obs: '+r.observaciones+'\n'; if(r.pesos.length){ s+='\nPesadas: '+r.pesos.map((p,i)=>(i+1)+') '+fmt(p,1)).join(' · ')+'\n'; } return s; }
 
 /* ---------- pantalla de la orden (resumen) ---------- */
 let doneW=null, doneFiles=null;
 function badgeEstado(x){ const e=estadoOrdenDe(x); return ['badge '+(ESTADO_CLS[e]||''), ESTADO_LABEL[e]||e]; }
-function badgeIA(x){ const est = !docsOkDe(x.form) ? 'sin_fotos' : (x.ia&&x.ia.estado)||'pendiente'; return ['badge '+(IA_CLS[est]||''), IA_LABEL[est]||est]; }
+function badgeIA(x){ const est = !docsOkDe(formDe(x)) ? 'sin_fotos' : (x.ia&&x.ia.estado)||'pendiente'; return ['badge '+(IA_CLS[est]||''), IA_LABEL[est]||est]; }
 function renderDoneStatus(x){ const st=$('done-status'); st.innerHTML=''; [badgeEstado(x), badgeIA(x)].forEach(([cls,txt])=>{ const b=document.createElement('span'); b.className=cls; b.textContent=txt; st.appendChild(b); }); if(x.video){ const b=document.createElement('span'); b.className='badge '+(x.video.estado==='subido'?'ok':'pend'); b.textContent=x.video.estado==='subido'?'🎥 video en Drive':'🎥 video por subir'; st.appendChild(b); }
   const n=x.nube||{}; const b=document.createElement('span'); b.className='badge '+(n.subido_en&&!n.pendiente?'ok':'pend'); b.textContent = n.subido_en&&!n.pendiente ? '☁ copia en la nube '+hhmm(n.subido_en) : '☁ copia pendiente'; st.appendChild(b);
   const lg=$('done-log'); const h=x.historial||[]; if(h.length){ lg.classList.remove('hidden'); lg.innerHTML=''; h.slice(-8).forEach(e=>{ const d=document.createElement('div'); d.textContent=fmtDT(e.fecha)+' · '+(e.usuario?e.usuario+' · ':'')+e.accion+(e.detalle?' — '+e.detalle:''); lg.appendChild(d); }); } else lg.classList.add('hidden'); }
 function renderPagoPanel(x){ const p=$('pago-panel'); const pg=x.pago; if(!pg||!pg.enviado_en){ p.classList.add('hidden'); return; } p.classList.remove('hidden'); const d=pg.decision; let t='Enviada a pago el '+fmtDT(pg.enviado_en)+(pg.enviado_por?' por '+pg.enviado_por:'')+'. ';
   if(d&&d.estado){ t+= (d.estado==='autorizada'?'✅ Pago autorizado':'↩ Devuelta con observaciones')+' por '+d.admin+' el '+fmtDT(d.decidido_en)+'. '; if(d.estado==='autorizada'){ t+='Forma de pago: '+(d.forma==='contado'?'contado · urgencia '+(d.urgencia||'-'):'a plazo · '+(d.plazo_dias?d.plazo_dias+' días':'')+(d.fecha_plazo?' · fecha '+fmtDate(d.fecha_plazo):''))+'. '; if(d.fila_planilla) t+='Fila '+d.fila_planilla+' de la planilla de compras. '; if(d.asana_url) t+='Tarea en Asana creada. '; } if(d.obs) t+='Observaciones: '+d.obs; }
   else t+='Esperando la decisión de los administradores (Pedro, Mauricio, Laura o Lucas).'; $('pago-detalle').textContent=t; }
-function renderDoneKv(x){ const r=buildRecord(x); const t=r.totales; const kv=$('done-kv'); kv.innerHTML=''; const rows=[['Proveedor',r.proveedor],['Categoría',r.categoria],['Comisionista',r.comisionista],['Fecha',fmtDate(r.fecha)+' '+(r.hora||'')],['Localidad',r.localidad],['Destino',(r.destino||'')+(r.destino_codigo?' · cód. '+r.destino_codigo:'')],['Cabezas / peso',r.cabezas+' · '+fmt(r.peso_total_kg,1)+' kg'+(r.peso_promedio_kg!=null?' · prom. '+fmt(r.peso_promedio_kg,1)+' kg':'')],['Total',t.pagar?gs(t.pagar)+(t.usd&&t.usd.total!=null?' · '+usd(t.usd.total):''):'—'],['Por cabeza',t.por_cabeza?gs(t.por_cabeza)+(t.usd&&t.usd.cab!=null?' · '+usd(t.usd.cab):''):'—'],['Comisión',r.comision.total?gs(r.comision.total)+' ('+r.comision.descripcion+')':comDesc(x.form)],['Flete',r.flete.total?r.flete.transportadora+' · '+gs(r.flete.total):(r.flete.transportadora||'—')],['Puesto en estancia',t.puesto_cabeza?gs(t.puesto_cabeza)+'/cab · '+gs(t.puesto_kg)+'/kg':'—'],['Factura',r.factura_nro||'—'],['Guía(s)',r.guias.map(g=>g.numero).filter(Boolean).join('; ')||'—'],['COTA(s)',r.guias.map(g=>g.cota_numero).filter(Boolean).join('; ')||'—'],['Cuenta',r.banco.titular?r.banco.titular+' · '+r.banco.entidad+' · '+r.banco.cuenta:'—']];
+function renderDoneKv(x){ const r=buildRecord(x); const t=r.totales; const kv=$('done-kv'); kv.innerHTML=''; const rows=[['Proveedor',r.proveedor],['Categoría',r.categoria],['Comisionista',r.comisionista],['Fecha',fmtDate(r.fecha)+' '+(r.hora||'')],['Localidad',r.localidad],['Destino',(r.destino||'')+(r.destino_codigo?' · cód. '+r.destino_codigo:'')],['Cabezas / peso',r.cabezas+' cab. · prom. '+(r.peso_promedio_kg!=null?fmt(r.peso_promedio_kg,1)+' kg':'—')+(r.precio_modo==='kg'?' ('+r.pesados+' pesados)':' (estimado)')],['Total',t.pagar?gs(t.pagar)+(t.usd&&t.usd.total!=null?' · '+usd(t.usd.total):''):'—'],['Por cabeza',t.por_cabeza?gs(t.por_cabeza)+(t.usd&&t.usd.cab!=null?' · '+usd(t.usd.cab):''):'—'],['Comisión',r.comision.total?gs(r.comision.total)+' ('+r.comision.descripcion+')':comDesc(x.form)],['Flete',r.flete.total?r.flete.transportadora+' · '+gs(r.flete.total):(r.flete.transportadora||'—')],['Puesto en estancia',t.puesto_cabeza?gs(t.puesto_cabeza)+'/cab · '+gs(t.puesto_kg)+'/kg':'—'],['Factura(s)',r.factura_nro||(r.documentos.fotos.facturas+' foto(s), sin leer')],['Guía(s)',r.guias_nro||(r.documentos.fotos.guias+' foto(s), sin leer')],['COTA(s)',r.cotas_nro||(r.documentos.fotos.cotas+' foto(s), sin leer')],['Cuenta(s)',r.bancos.filter(b=>b.titular).map(b=>b.titular+' · '+b.entidad+' · '+b.cuenta).join(' | ')||'—']];
   rows.forEach(([k,v])=>{ const dt=document.createElement('dt'); dt.textContent=k; const dd=document.createElement('dd'); dd.textContent=v||'—'; kv.appendChild(dt); kv.appendChild(dd); }); return r; }
 async function openDone(x){ doneW=x; doneFiles=null; show('scr-done'); const r=renderDoneKv(x); renderDoneStatus(x); renderPagoPanel(x); $('done-msg').classList.add('hidden');
   const fl=$('done-falt'); if(r.faltantes.length){ fl.classList.remove('hidden'); fl.innerHTML='<b>Borrador: faltan '+r.faltantes.length+' datos obligatorios.</b><ul class="falt-list">'+r.faltantes.map(f=>'<li>'+esc(f.titulo)+'</li>').join('')+'</ul>'; } else fl.classList.add('hidden');
@@ -1328,9 +1419,9 @@ $('btn-pago-actualizar').addEventListener('click',async()=>{ if(!doneW) return; 
 
 /* ---------- barra de acciones ---------- */
 $('ab-back').addEventListener('click',async()=>{ if(pagina===2){ pagina=1; renderPagina(); return; } if(dirty){ try{ await enCola(()=>saveDraft(true)); }catch(e){} } renderHome(); show('scr-home'); });
-$('ab-draft').addEventListener('click',async()=>{ try{ await enCola(()=>saveDraft(true)); }catch(e){ toast('No se pudo guardar: '+e.message); return; } const f=faltantesDe(F); toast(f.length?'Borrador guardado ('+f.length+(f.length===1?' dato por completar).':' datos por completar).'):'Guardado: la orden está completa.'); if(navigator.onLine) verificarIA(formId,false); renderHome(); show('scr-home'); });
-$('ab-next').addEventListener('click',async()=>{ if(pagina===1){ const e=faltantesDe(F).filter(x=>x.pagina===1); showErr('err1',e); pagina=2; renderPagina(); try{ await enCola(()=>saveDraft(true)); }catch(x){} if(navigator.onLine) verificarIA(formId,false); return; }
-  const e=faltantesDe(F); showErr('err2',e.filter(x=>x.pagina===2)); autoOff=true; try{ await enCola(()=>saveDraft(true)); }catch(x){ toast('No se pudo guardar: '+x.message); autoOff=false; return; } autoOff=false; const x=await dbGet(formId); if(navigator.onLine) verificarIA(formId,false); toast(e.length?'Guardada como borrador: faltan '+e.length+' datos.':'Orden completa.'); renderHome(); await openDone(x); });
+$('ab-draft').addEventListener('click',async()=>{ try{ await enCola(()=>saveDraft(true)); }catch(e){ toast('No se pudo guardar: '+e.message); return; } const f=faltantesActual(); toast(f.length?'Borrador guardado ('+f.length+(f.length===1?' dato por completar).':' datos por completar).'):'Guardado: la orden está completa.'); if(navigator.onLine) verificarIA(formId,false); renderHome(); show('scr-home'); });
+$('ab-next').addEventListener('click',async()=>{ if(pagina===1){ const e=faltantesActual().filter(x=>x.pagina===1); showErr('err1',e); pagina=2; renderPagina(); try{ await enCola(()=>saveDraft(true)); }catch(x){} if(navigator.onLine) verificarIA(formId,false); return; }
+  const e=faltantesActual(); showErr('err2',e.filter(x=>x.pagina===2)); autoOff=true; try{ await enCola(()=>saveDraft(true)); }catch(x){ toast('No se pudo guardar: '+x.message); autoOff=false; return; } autoOff=false; const x=await dbGet(formId); if(navigator.onLine) verificarIA(formId,false); toast(e.length?'Guardada como borrador: faltan '+e.length+' datos.':'Orden completa.'); renderHome(); await openDone(x); });
 setInterval(autoGuardar,2000);
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'){ autoGuardar(); programarSubida(1500); } });
 window.addEventListener('pagehide',()=>{ autoGuardar(); });
@@ -1351,7 +1442,7 @@ function envolverSwipe(item, x){ const wrap=document.createElement('div'); wrap.
   const fin=()=>{ if(!moviendo) return; moviendo=false; wrap.classList.remove('dragging'); if(horizontal){ const base=abiertoAlEmpezar?-ancho():0; const v=base+dx; if(v<-ancho()/2){ if(swipeAbierto&&swipeAbierto!==wrap) cerrarSwipe(); setX(-ancho()); swipeAbierto=wrap; } else { setX(0); if(swipeAbierto===wrap) swipeAbierto=null; } item.dataset.swiped=Math.abs(dx)>6?'1':''; setTimeout(()=>{ item.dataset.swiped=''; },50); } };
   item.addEventListener('pointerup',fin); item.addEventListener('pointercancel',fin); item.addEventListener('click',e=>{ if(item.dataset.swiped==='1'){ e.stopImmediatePropagation(); e.preventDefault(); return; } if(swipeAbierto===wrap){ e.stopImmediatePropagation(); e.preventDefault(); cerrarSwipe(); } else if(swipeAbierto) cerrarSwipe(); },true); wrap.cerrar=()=>setX(0); return wrap; }
 function cerrarSwipe(){ if(swipeAbierto){ swipeAbierto.cerrar(); swipeAbierto=null; } }
-function itemOrden(x){ const b=document.createElement('button'); const est=estadoOrdenDe(x); const f=x.form||{}; const c=calc(f); b.className='item est-'+est+(x.ajena?' ajena':''); b.innerHTML='<div class="main"><b></b><span></span><span class="l2"></span></div><div class="badges"><span class="badge"></span><span class="badge"></span></div>';
+function itemOrden(x){ const b=document.createElement('button'); const est=estadoOrdenDe(x); const f=formDe(x); const c=calc(f); b.className='item est-'+est+(x.ajena?' ajena':''); b.innerHTML='<div class="main"><b></b><span></span><span class="l2"></span></div><div class="badges"><span class="badge"></span><span class="badge"></span></div>';
   b.querySelector('b').textContent=(f.proveedor||'Sin proveedor')+(f.categoria?' · '+f.categoria:''); b.querySelector('.main span').textContent=fmtDate(f.fecha)+' · '+c.cab+' cab.'+(c.ok?' · '+gs(c.pagar):'')+(f.destino?' → '+f.destino:''); b.querySelector('.l2').textContent=(f.comisionista||x.creado_por||'')+' · guardada '+fmtDT(x.actualizado_en||x.creado_en);
   const [c1,t1]=badgeEstado(x), [c2,t2]=badgeIA(x); const bd=b.querySelectorAll('.badge'); bd[0].className=c1; bd[0].textContent=t1; bd[1].className=c2; bd[1].textContent=t2; b.addEventListener('click',()=>openDone(x)); return b; }
 async function renderHome(){ if(!sesion) return; let all=[]; try{ all=await dbAll(); }catch(e){} all.sort((a,b)=>(b.actualizado_en||b.creado_en).localeCompare(a.actualizado_en||a.creado_en));
@@ -1371,7 +1462,7 @@ $('btn-config').addEventListener('click',()=>{ if($('scr-home').classList.contai
    ===================================================================================================== */
 function ansi(s){ return String(s==null?'':s).replace(/₲/g,'Gs').replace(/[—–]/g,'-').replace(/→/g,'->').replace(/✓/g,'OK').replace(/⚠/g,'!').replace(/✗/g,'X').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[^\x20-\x7E\xA0-\xFF€]/g,'?'); }
 async function makePdf(r, x){
-  const {PDFDocument, StandardFonts, rgb, PDFName, PDFString} = window.PDFLib; const f=x.form||{};
+  const {PDFDocument, StandardFonts, rgb, PDFName, PDFString} = window.PDFLib; const f=formDe(x);
   const pdf=await PDFDocument.create(); pdf.setTitle('Orden de compra de ganado · '+(r.proveedor||'')+' · '+(r.fecha||'')); pdf.setAuthor('App Orden de compra · Rural Bioenergía S.A.');
   const font=await pdf.embedFont(StandardFonts.Helvetica), bold=await pdf.embedFont(StandardFonts.HelveticaBold);
   const W=595.28,H=841.89,M=44; const COL={borrador:rgb(.42,.45,.42), completa:rgb(.12,.35,.48), enviada:rgb(.6,.42,.0), autorizada:rgb(.016,.32,.17), rechazada:rgb(.44,.12,.05)}; const barColor=COL[r.estado_orden]||COL.borrador;
@@ -1397,43 +1488,52 @@ async function makePdf(r, x){
   page.drawText(ansi(r.proveedor||'(sin proveedor)'),{x:M,y,size:22,font:bold,color:ink}); const fd=fmtDate(r.fecha)||'—'; page.drawText(ansi(fd),{x:W-M-bold.widthOfTextAtSize(fd,16),y:y+3,size:16,font:bold,color:ink}); y-=16;
   page.drawText(ansi((r.categoria||'Categoría sin definir')+'  ·  Comisionista: '+(r.comisionista||'—')+'  ·  '+ESTADO_LABEL[r.estado_orden]),{x:M,y,size:9.5,font,color:grey}); y-=18;
   if(r.faltantes.length){ const lines=wrap('BORRADOR · Faltan datos obligatorios: '+r.faltantes.map(q=>q.titulo).join(' · '),8.5,bold,W-M*2-16); const h=lines.length*11+12; need(h); page.drawRectangle({x:M,y:y-h+10,width:W-M*2,height:h,color:rgb(.98,.9,.88),borderColor:red,borderWidth:.8}); lines.forEach((l,i)=>page.drawText(l,{x:M+8,y:y-i*11,size:8.5,font:bold,color:red})); y-=h+4; }
-  // foto de los animales a la derecha + botón del video
-  let fotoBottom=null; if(f.foto_animales){ try{ const img=await embedDataUrl(f.foto_animales); const pw=RIGHT_W-10; const sc=Math.min(pw/img.width, 150/img.height); const iw=img.width*sc, ih=img.height*sc; const px=W-M-iw, py=y-ih+6; page.drawImage(img,{x:px,y:py,width:iw,height:ih}); page.drawRectangle({x:px,y:py,width:iw,height:ih,borderColor:line,borderWidth:.5}); page.drawText(ansi('Animales carimbados'),{x:px,y:py-9,size:7,font:bold,color:grey}); kvRight=RIGHT_W; fotoBottom=py-12; }catch(e){} }
-  { const hasUrl=r.video&&r.video.url; const bx=W-M-RIGHT_W+10, by=(fotoBottom!=null?fotoBottom:y)-24; const bw=RIGHT_W-10, bh=18; const colr=hasUrl?brand:grey; page.drawRectangle({x:bx,y:by,width:bw,height:bh,borderColor:colr,borderWidth:.8,color:hasUrl?rgb(.93,.96,.93):rgb(.96,.96,.95)});
-    page.drawRectangle({x:bx+7,y:by+5,width:11,height:8,color:colr}); page.drawRectangle({x:bx+10,y:by+13,width:5,height:1.8,color:colr}); page.drawCircle({x:bx+12.5,y:by+9,size:2.4,color:rgb(1,1,1)}); page.drawText(ansi(hasUrl?'Ver video del lote (Drive)':r.video?'Video: pendiente de subir':'Sin video'),{x:bx+23,y:by+6,size:7.8,font:bold,color:colr}); if(hasUrl) addLink(page,bx,by,bw,bh,r.video.url); if(fotoBottom!=null) fotoBottom=by-6; else kvRight=RIGHT_W; }
+  // botón del video del lote (enlace al Drive) a la derecha
+  let fotoBottom=null; { const hasUrl=r.video&&r.video.url; const bx=W-M-RIGHT_W+10, by=y-24; const bw=RIGHT_W-10, bh=18; const colr=hasUrl?brand:(r.video?grey:red); page.drawRectangle({x:bx,y:by,width:bw,height:bh,borderColor:colr,borderWidth:.8,color:hasUrl?rgb(.93,.96,.93):rgb(.96,.96,.95)});
+    page.drawRectangle({x:bx+7,y:by+5,width:11,height:8,color:colr}); page.drawRectangle({x:bx+10,y:by+13,width:5,height:1.8,color:colr}); page.drawCircle({x:bx+12.5,y:by+9,size:2.4,color:rgb(1,1,1)}); page.drawText(ansi(hasUrl?'Ver video del lote (Drive)':r.video?'Video: pendiente de subir':'Falta el video'),{x:bx+23,y:by+6,size:7.8,font:bold,color:colr}); if(hasUrl) addLink(page,bx,by,bw,bh,r.video.url); kvRight=RIGHT_W; fotoBottom=by-6; }
   title('Datos del lote');
-  kv('Localidad / estancia', r.localidad); kv('Hora de pesaje', r.hora); kv('Ubicación del corral', r.ubicacion?r.ubicacion.lat.toFixed(5)+', '+r.ubicacion.lon.toFixed(5)+(r.ubicacion.fuente==='mapa'?' (marcada en el mapa)':' (GPS)')+' · ver en Google Maps':'—', r.ubicacion?{link:'https://www.google.com/maps?q='+r.ubicacion.lat+','+r.ubicacion.lon, color:brand}:{});
-  kv('Destino', (r.destino||'—')+(r.destino_codigo?' (cód. '+r.destino_codigo+')':'')); kv('Carimbo', r.carimbo); kv('Sola marca · Raza', (r.sola_marca?(r.sola_marca==='si'?'Sola marca: sí':'Sola marca: no'):'Sola marca: —')+'  ·  '+(r.raza?(r.raza==='zebu'?'Zebú':'Híbrido'):'raza —'));
+  kv('Cantidad de animales', r.cabezas+' cabezas'); kv('Localidad / estancia', r.localidad); kv('Hora de pesaje', r.hora); kv('Ubicación del corral', r.ubicacion?r.ubicacion.lat.toFixed(5)+', '+r.ubicacion.lon.toFixed(5)+(r.ubicacion.fuente==='mapa'?' (marcada en el mapa)':' (GPS)')+' · ver en Google Maps':'—', r.ubicacion?{link:'https://www.google.com/maps?q='+r.ubicacion.lat+','+r.ubicacion.lon, color:brand}:{});
+  kv('Destino', (r.destino||'—')+(r.destino_codigo?' (cód. '+r.destino_codigo+')':'')); kv('Carimbo', r.carimbo); kv('Sola marca · Raza', (r.sola_marca?(r.sola_marca==='si'?'Sola marca: sí':'Sola marca: no'):'Sola marca: —')+'  ·  '+(r.raza?(RAZA_LABEL[r.raza]||r.raza):'raza —'));
   kv('Distancia por ruta', r.km?fmt(r.km,1)+' km'+(r.km_fuente==='ruta'?' (por ruta)':' (cargados a mano)')+(r.km_detalle?' · '+r.km_detalle.replace(/ · calculado.*$/,''):''):'—');
-  const sug=fl.sugerencia; kv('Flete', fl.transportadora?fl.transportadora+' · '+gs(fl.precio_viaje)+' × '+fl.viajes+(fl.viajes===1?' viaje = ':' viajes = ')+gs(fl.total)+(r.retorno_cargado?' · con retorno cargado':''):'—'); if(sug) kv('Sugerencia de flete', 'Toro Pampa '+gs(sug.tp)+' · Cerro Porã '+gs(sug.cp)+' por viaje ('+sug.banda+') -> '+sug.sug+(sug.tp!==sug.cp?' ('+gs(Math.abs(sug.tp-sug.cp))+' menos por viaje)':' (mismo precio)')+(r.retorno_cargado?' · retorno cargado: siempre Toro Pampa':''), {bold:false});
+  const sug=fl.sugerencia; kv('Flete', fl.transportadora?fl.transportadora+' · '+gs(fl.precio_viaje)+' × '+fl.viajes+(fl.viajes===1?' viaje = ':' viajes = ')+gs(fl.total)+' · '+(fl.cabezas_por_camion||52)+' cab./camión'+(r.retorno_cargado?' · con retorno cargado':''):'—'); if(fl.contacto) kv('Contacto', fl.contacto.nombre+' · '+fl.contacto.cargo+' · '+fl.contacto.tel, {bold:false}); if(sug) kv('Sugerencia de flete', 'Toro Pampa '+gs(sug.tp)+' · Cerro Porã '+gs(sug.cp)+' por viaje ('+sug.banda+') -> '+sug.sug+(sug.tp!==sug.cp?' ('+gs(Math.abs(sug.tp-sug.cp))+' menos por viaje)':' (mismo precio)')+(r.retorno_cargado?' · retorno cargado: siempre Toro Pampa':''), {bold:false});
   if(fotoBottom!=null && y>fotoBottom) y=fotoBottom; kvRight=0; y-=4;
   /* pesaje */
-  title('Pesaje animal por animal (kg) · '+r.cabezas+' cabezas'+(r.pesos.length?'':' · sin pesadas individuales'));
+  kv('Forma de compra', r.precio_modo==='kg' ? 'Por kg vivo · '+(r.precio?gs(r.precio)+' por kg':'precio —') : 'Por cabeza (punta) · '+(r.precio?gs(r.precio)+' por cabeza':'precio —'));
+  title(r.precio_modo==='kg' ? 'Hoja de pesaje (kg) · '+r.pesados+' de '+r.cabezas+' animales pesados' : 'Peso promedio estimado (compra por cabeza)');
   if(r.pesos.length){ const cols=5, rows=Math.max(8,Math.ceil(r.pesos.length/cols)); const cw=(W-M*2)/cols, rowH=11.5; need(Math.min(rows,12)*rowH+16);
     let xx=M; for(let ci=0;ci<cols;ci++){ page.drawRectangle({x:xx,y:y-rowH+3,width:cw*.3,height:rowH,color:brand}); page.drawText('N°',{x:xx+4,y:y-rowH+6,size:7.5,font:bold,color:rgb(1,1,1)}); page.drawRectangle({x:xx+cw*.3,y:y-rowH+3,width:cw*.7,height:rowH,color:brand}); page.drawText('Peso',{x:xx+cw*.3+4,y:y-rowH+6,size:7.5,font:bold,color:rgb(1,1,1)}); xx+=cw; } y-=rowH;
     for(let rr=0;rr<rows;rr++){ need(rowH,'DATOS OPERATIVOS (cont.)'); xx=M; for(let ci=0;ci<cols;ci++){ const idx=ci*rows+rr; page.drawRectangle({x:xx,y:y-rowH+3,width:cw*.3,height:rowH,borderColor:line,borderWidth:.4,color:soft}); page.drawText(String(idx+1),{x:xx+4,y:y-rowH+6,size:7.5,font,color:grey}); page.drawRectangle({x:xx+cw*.3,y:y-rowH+3,width:cw*.7,height:rowH,borderColor:line,borderWidth:.4}); if(r.pesos[idx]!==undefined){ const tt=fmt(r.pesos[idx],1); page.drawText(tt,{x:xx+cw-6-bold.widthOfTextAtSize(tt,8.5),y:y-rowH+6,size:8.5,font:bold,color:ink}); } xx+=cw; } y-=rowH; } y-=8; }
-  else if(r.peso_estimado){ kv('Peso promedio estimado', fmt(r.peso_estimado,1)+' kg (compra por cabeza, sin pesaje individual)'); }
+  else if(r.precio_modo!=='kg'){ kv('Peso promedio estimado', r.peso_estimado?fmt(r.peso_estimado,1)+' kg (estimado por el comisionista; no se pesa animal por animal)':'—'); }
   /* totales y liquidación */
   title('Totales y liquidación');
-  const d='—'; const pm=r.precio_modo==='kg'?'Precio por kg':'Precio por cabeza';
-  tabla2([ ['Total cabezas', r.cabezas, 'Peso total', fmt(r.peso_total_kg,1)+' kg'], [pm, r.precio?gs(r.precio):d, 'Total a pagar (animales)', t.pagar?gs(t.pagar):d], ['Peso promedio', r.peso_promedio_kg!=null?fmt(r.peso_promedio_kg,1)+' kg':d, 'Por cabeza', t.por_cabeza?gs(t.por_cabeza):d],
-    ['IVA 5 % incluido (÷ 21)', t.iva5?gs(t.iva5):d, 'Por kg', t.por_kg?gs(t.por_kg):d], ['Comisión ('+c.descripcion.replace(' por ','/').replace('cabeza','cab')+')', c.total?gs(c.total):(c.modo==='sin'?'sin comisión':d), 'IVA 10 % comisión (÷ 11)', c.total?gs(c.iva10):d], ['Flete ('+(fl.transportadora||'—')+')', fl.total?gs(fl.total):d, 'Puesto en estancia · total', t.puesto_total?gs(t.puesto_total):d],
+  const d='—'; const pm=r.precio_modo==='kg'?'Precio por kg vivo':'Precio por cabeza';
+  tabla2([ ['Total cabezas', r.cabezas, r.precio_modo==='kg'?'Peso total (lote)':'Peso total estimado', fmt(r.peso_total_kg,1)+' kg'], [pm, r.precio?gs(r.precio):d, 'Total a pagar (animales)', t.pagar?gs(t.pagar):d], ['Peso promedio', r.peso_promedio_kg!=null?fmt(r.peso_promedio_kg,1)+' kg'+(r.precio_modo==='kg'?'':' (est.)'):d, 'Por cabeza', t.por_cabeza?gs(t.por_cabeza):d],
+    ['Por kg', t.por_kg?gs(t.por_kg):d, 'Comisión ('+c.descripcion.replace(' por ','/').replace('cabeza','cab')+')', c.total?gs(c.total):(c.modo==='sin'?'sin comisión':d)], ['Flete ('+(fl.transportadora||'—')+')', fl.total?gs(fl.total):d, 'Puesto en estancia · total', t.puesto_total?gs(t.puesto_total):d],
     ['Puesto estancia · por cabeza', t.puesto_cabeza?gs(t.puesto_cabeza):d, 'Puesto estancia · por kg', t.puesto_kg?gs(t.puesto_kg):d], ['Cambio del día', r.cambio?fmt(r.cambio)+' ₲/US$':d, 'Total en US$', usdOk?usd(t.usd.total):d], ['US$ por cabeza', usdOk?usd(t.usd.cab):d, 'US$ por kg', usdOk&&t.usd.kg!=null?usd(t.usd.kg):d], ['Puesto estancia · US$ por cabeza', usdOk&&t.usd.puesto_cab!=null?usd(t.usd.puesto_cab):d, 'Puesto estancia · US$ por kg', usdOk&&t.usd.puesto_kg!=null?usd(t.usd.puesto_kg):d] ]);
-  if(t.pagar){ const ln=wrap('Cómo facturar: la factura de los animales lleva IVA 5 % → IVA incluido '+gs(t.iva5)+' (total ÷ 21), base '+gs(t.base5)+'. '+(c.total?'La factura de la comisión lleva IVA 10 % → IVA incluido '+gs(c.iva10)+' (total ÷ 11), base '+gs(c.total-c.iva10)+'.':''),8,font,W-M*2); need(ln.length*10+4); ln.forEach((l,i)=>page.drawText(l,{x:M,y:y-i*10,size:8,font,color:grey})); y-=ln.length*10+6; }
+  const fx=r.facturacion; if(fx){ title('Cómo facturar'); const cw=[34,(W-M*2)-34-78-36-88-86,78,36,88,86]; const head=['Cant.','Descripción','Precio unit.','IVA','Valor a facturar','Liquidación IVA'];
+    const filaF=(vals,hdr)=>{ const rowH=15; need(rowH); let xx=M; vals.forEach((v,i)=>{ page.drawRectangle({x:xx,y:y-rowH+4,width:cw[i],height:rowH,borderColor:line,borderWidth:.5,color:hdr?brand:undefined}); let t2=ansi(v); const sz=hdr?7.5:8.6, fnt=hdr||i>=2?bold:font; while(fnt.widthOfTextAtSize(t2,sz)>cw[i]-6&&t2.length>3) t2=t2.slice(0,-2); page.drawText(t2,{x:i>=2&&!hdr?xx+cw[i]-4-fnt.widthOfTextAtSize(t2,sz):xx+3,y:y-rowH+8,size:sz,font:fnt,color:hdr?rgb(1,1,1):ink}); xx+=cw[i]; }); y-=rowH; };
+    filaF(head,true); filaF([String(fx.fa.cantidad), fx.fa.descripcion, gs(fx.fa.unitario), '5 %', gs(fx.fa.total), gs(fx.fa.iva5)]);
+    if(fx.fc) filaF([String(fx.fc.cantidad), fx.fc.descripcion, gs(fx.fc.unitario), '10 %', gs(fx.fc.total), gs(fx.fc.iva10)]);
+    const nota=wrap('El precio ya incluye el IVA. Precio unitario por cabeza'+(r.precio_modo==='kg'?' (convertido de Gs/kg vivo y redondeado a miles)':'')+'; en la columna del IVA va el valor a facturar y, abajo, en la liquidación del IVA, el valor a facturar dividido por 21 (animales) o por 11 (comisión).',7.6,font,W-M*2); need(nota.length*9+4); nota.forEach((l,i)=>page.drawText(l,{x:M,y:y-3-i*9,size:7.6,font,color:grey})); y-=nota.length*9+8; }
   if(r.observaciones){ const ln=wrap(r.observaciones,9,font,W-M*2-120); need(ln.length*12+6); page.drawText('Observaciones',{x:M,y,size:8.2,font,color:grey}); ln.forEach((l,i)=>page.drawText(l,{x:M+120,y:y-i*12,size:9,font,color:ink})); y-=ln.length*12+8; }
   if(r.pesos.length&&r.precio&&r.precio_modo==='kg'){ title('Detalle por animal (peso y valor)'); const cols=4, cw=(W-M*2)/cols, rowH=11, per=Math.ceil(r.pesos.length/cols); for(let rr=0;rr<per;rr++){ need(rowH,'DATOS OPERATIVOS (cont.)'); for(let ci=0;ci<cols;ci++){ const idx=ci*per+rr; if(idx>=r.pesos.length) continue; const x0=M+ci*cw; page.drawText(String(idx+1).padStart(3,' '),{x:x0,y,size:8,font,color:grey}); page.drawText(fmt(r.pesos[idx],1)+' kg',{x:x0+18,y,size:8,font,color:ink}); const v=ansi(gs(r.pesos[idx]*r.precio)); page.drawText(v,{x:x0+cw-10-bold.widthOfTextAtSize(v,8),y,size:8,font:bold,color:ink}); } y-=rowH; } y-=6; }
   need(44); y-=22; const sw=(W-M*2-30)/2; [['Comisionista ('+(r.comisionista||'')+')',M],['Recibido por (Ypoti)',M+sw+30]].forEach(([lab,sx])=>{ page.drawLine({start:{x:sx,y},end:{x:sx+sw,y},thickness:.7,color:ink}); page.drawText(ansi(lab),{x:sx+(sw-font.widthOfTextAtSize(ansi(lab),8.5))/2,y:y-11,size:8.5,font,color:ink}); }); y-=20;
   /* ===== PÁGINA 2: documentación y pago ===== */
   header('DOCUMENTACIÓN Y PAGO'); kvRight=0;
   page.drawText(ansi(r.proveedor||'(sin proveedor)'),{x:M,y,size:16,font:bold,color:ink}); page.drawText(ansi(fd),{x:W-M-bold.widthOfTextAtSize(fd,12),y:y+2,size:12,font:bold,color:ink}); y-=22;
-  const ia=r.ia||{}; const res=ia.resultado||{}; const ex=res.extraido||{}; const fa=ex.factura||{}; const gl=ex.guias||[];
-  title('Factura del proveedor'+(f.foto_factura?'':' · SIN FOTO'));
-  kv('Nº de factura', r.factura_nro||fa.nro||'—'); if(fa.timbrado||fa.vigencia_fin) kv('Timbrado', (fa.timbrado||'—')+(fa.vigencia_inicio&&fa.vigencia_fin?' · vigencia '+fmtDate(fa.vigencia_inicio)+' a '+fmtDate(fa.vigencia_fin):fa.vigencia_fin?' · vigente hasta '+fmtDate(fa.vigencia_fin):'')); if(fa.fecha_emision||fa.condicion) kv('Emisión · condición', (fa.fecha_emision||'—')+(fa.condicion?' · '+fa.condicion:'')); if(fa.emisor_nombre||fa.emisor_ruc) kv('Emisor', (fa.emisor_nombre||'—')+(fa.emisor_ruc?' · RUC '+fa.emisor_ruc:'')); if(fa.cliente_nombre||fa.cliente_ruc) kv('Cliente', (fa.cliente_nombre||'—')+(fa.cliente_ruc?' · RUC '+fa.cliente_ruc:'')); if(fa.cantidad!=null||fa.descripcion) kv('Detalle', (fa.cantidad!=null?fa.cantidad+' × ':'')+(fa.descripcion||'')+(fa.precio_unitario!=null?' a '+gs(fa.precio_unitario):'')); if(fa.total!=null) kv('Total · IVA 5 %', gs(fa.total)+(fa.iva5!=null?' · IVA '+gs(fa.iva5):'')); if(!fa.nro&&!fa.total) kv('Lectura IA', ia.estado==='pendiente'||!ia.estado?'Pendiente (se lee con señal)':'Sin datos legibles', {bold:false}); y-=4;
-  title('Guía(s) de traslado y COTA(s)'+(r.guias.every(g=>g.foto&&g.cota_foto)&&r.guias.length?'':' · FALTAN FOTOS')); const cl=ex.cotas||[];
-  r.guias.forEach((g,i)=>{ const e=gl[i]||{}, c=cl[i]||{}; const n=r.guias.length>1?' '+(i+1):'';
-    kv('Guía'+n+' · Nº', (g.numero||e.nro||'—')+(g.foto?'':'  (FALTA LA FOTO)'), g.foto?{}:{color:red}); if(e.vendedor_nombre||e.vendedor_ruc) kv('Vendedor (guía)', (e.vendedor_nombre||'')+(e.vendedor_ruc?' · RUC '+e.vendedor_ruc:'')); if(e.factura_nro) kv('Factura citada', e.factura_nro); if(e.total_animales!=null) kv('Animales (guía)', String(e.total_animales)+(e.categorias&&e.categorias.length?' ('+e.categorias.map(q=>q.cantidad+' '+q.categoria).join(', ')+')':'')); if(e.adquiriente_nombre) kv('Adquiriente', e.adquiriente_nombre+(e.adquiriente_ruc?' · RUC '+e.adquiriente_ruc:''));
-    kv('COTA'+n+' · Nº', (g.cota_numero||c.nro||'—')+(g.cota_foto?'':'  (FALTA LA FOTO)')+(c.guia_nro?' · guía '+c.guia_nro:''), g.cota_foto?{}:{color:red}); if(c.fecha_expedicion||c.validez_hasta) kv('Expedición · validez', (c.fecha_expedicion?fmtDate(c.fecha_expedicion):'—')+(c.validez_hasta?' · válida hasta '+fmtDate(c.validez_hasta):'')); if(c.propietario) kv('Propietario', c.propietario+(c.propietario_codigo?' · '+c.propietario_codigo:'')); if(c.establecimiento_nombre||c.establecimiento_codigo) kv('Establecimiento origen', (c.establecimiento_nombre||'')+(c.establecimiento_codigo?' · cód. '+c.establecimiento_codigo:'')+(c.localidad?' · '+c.localidad:'')+(c.distrito?' · '+c.distrito:'')+(c.departamento?' · '+c.departamento:'')); if(c.destino_nombre||c.destino_codigo) kv('Destino', (c.destino_nombre||'')+(c.destino_codigo?' · cód. '+c.destino_codigo:'')+(c.consignado_a?' · consignado a '+c.consignado_a:'')); if(c.total_animales!=null) kv('Animales (COTA)', String(c.total_animales)+(c.finalidad?' · '+c.finalidad:'')); y-=3; });
-  y-=4; title('Datos bancarios para el pago'); const b=r.banco||{}; kv('Titular', b.titular); kv('Banco / entidad', b.entidad); kv('Nº de cuenta', (b.cuenta||'—')+(b.moneda?' · '+(b.moneda==='USD'?'US$':'₲'):'')); kv('Documento', (b.doc_tipo||'')+' '+(b.doc||'—')); if(b.alias) kv('Alias', b.alias);
+  const ia=r.ia||{}; const res=ia.resultado||{}; const ex=res.extraido||{}; const fotos=(r.documentos&&r.documentos.fotos)||{facturas:0,guias:0,cotas:0};
+  const sinLeer=ia.estado==='pendiente'||!ia.estado?'pendiente de lectura (se lee con señal)':'sin datos legibles';
+  title('Facturas · '+fotos.facturas+(fotos.facturas===1?' foto':' fotos')+(fotos.facturas?'':' · FALTA LA FOTO'));
+  (ex.facturas||[]).forEach((fa,i)=>{ const n=(ex.facturas.length>1?' '+(i+1):''); kv('Factura'+n, (fa.nro||'—')+(fa.fecha_emision?' · '+fmtDate(fa.fecha_emision):'')+(fa.condicion?' · '+fa.condicion:'')); if(fa.timbrado||fa.vigencia_fin) kv('Timbrado', (fa.timbrado||'—')+(fa.vigencia_inicio&&fa.vigencia_fin?' · vigencia '+fmtDate(fa.vigencia_inicio)+' a '+fmtDate(fa.vigencia_fin):fa.vigencia_fin?' · vigente hasta '+fmtDate(fa.vigencia_fin):'')); if(fa.emisor_nombre||fa.emisor_ruc) kv('Emisor', (fa.emisor_nombre||'—')+(fa.emisor_ruc?' · RUC '+fa.emisor_ruc:'')); if(fa.cantidad_cabezas!=null||fa.total!=null) kv('Cabezas · total · IVA 5 %', (fa.cantidad_cabezas!=null?fa.cantidad_cabezas+' cab.':'—')+' · '+(fa.total!=null?gs(fa.total):'—')+(fa.iva5!=null?' · IVA '+gs(fa.iva5):'')); y-=2; });
+  if(!(ex.facturas||[]).length && fotos.facturas) kv('Lectura IA', sinLeer, {bold:false});
+  title('Guías de traslado · '+fotos.guias+(fotos.guias===1?' foto':' fotos')+(fotos.guias?'':' · FALTA LA FOTO'));
+  (ex.guias||[]).forEach((g,i)=>{ const n=(ex.guias.length>1?' '+(i+1):''); kv('Guía'+n, (g.nro||'—')+(g.total_animales!=null?' · '+g.total_animales+' animales':'')+(g.factura_nro?' · cita la factura '+g.factura_nro:'')); if(g.vendedor_nombre||g.vendedor_ruc) kv('Vendedor', (g.vendedor_nombre||'')+(g.vendedor_ruc?' · RUC '+g.vendedor_ruc:'')+(g.establecimiento_nombre?' · '+g.establecimiento_nombre:'')); y-=2; });
+  if(!(ex.guias||[]).length && fotos.guias) kv('Lectura IA', sinLeer, {bold:false});
+  title('COTAs · '+fotos.cotas+(fotos.cotas===1?' foto':' fotos')+(fotos.cotas?'':' · FALTA LA FOTO'));
+  (ex.cotas||[]).forEach((c,i)=>{ const n=(ex.cotas.length>1?' '+(i+1):''); kv('COTA'+n, (c.nro||'—')+(c.guia_nro?' · guía '+c.guia_nro:'')+(c.total_animales!=null?' · '+c.total_animales+' animales':'')+(c.validez_hasta?' · válida hasta '+fmtDate(c.validez_hasta):'')); if(c.propietario||c.establecimiento_nombre) kv('Origen', (c.propietario||'')+(c.propietario_codigo?' ('+c.propietario_codigo+')':'')+(c.establecimiento_nombre?' · '+c.establecimiento_nombre:'')+(c.establecimiento_codigo?' cód. '+c.establecimiento_codigo:'')+(c.distrito?' · '+c.distrito:'')); if(c.destino_nombre||c.destino_codigo) kv('Destino', (c.destino_nombre||'')+(c.destino_codigo?' · cód. '+c.destino_codigo:'')+(c.consignado_a?' · consignado a '+c.consignado_a:'')); y-=2; });
+  if(!(ex.cotas||[]).length && fotos.cotas) kv('Lectura IA', sinLeer, {bold:false});
+  y-=4; title('Datos bancarios para el pago'+((r.bancos||[]).length>1?' · '+r.bancos.length+' cuentas':''));
+  (r.bancos||[]).forEach((b,i)=>{ const n=r.bancos.length>1?' '+(i+1):''; kv('Titular'+n, b.titular); kv('Banco · cuenta', (b.entidad||'—')+' · '+(b.cuenta||'—')+' · '+(b.moneda==='USD'?'US$':'Gs')); kv('Documento', (b.doc_tipo||'')+' '+(b.doc||'—')+(b.alias?' · alias '+b.alias:'')); y-=2; });
   y-=4; title('Verificación automática (IA)');
   const estIA=ia.estado||'pendiente'; kv('Estado', IA_LABEL[estIA]||estIA, {color: estIA==='ok'?brand:estIA==='errores'?red:estIA==='advertencias'?amber:grey}); if(ia.verificado_en) kv('Verificada', fmtDT(ia.verificado_en), {bold:false});
   (res.checks||[]).forEach(ch=>{ const ico=ch.estado==='ok'?'OK':ch.estado==='warn'?'AVISO':ch.estado==='bad'?'ERROR':'—'; const lines=wrap(ch.titulo+(ch.detalle?': '+ch.detalle:''),8.5,font,W-M*2-60); need(lines.length*11+4); page.drawText(ico,{x:M,y,size:8,font:bold,color:ch.estado==='ok'?brand:ch.estado==='warn'?amber:ch.estado==='bad'?red:grey}); lines.forEach((l,i)=>page.drawText(l,{x:M+46,y:y-i*11,size:8.5,font,color:ink})); y-=lines.length*11+4; });
@@ -1441,7 +1541,7 @@ async function makePdf(r, x){
   if(r.pago&&r.pago.justificacion_ia) kv('Justificación', r.pago.justificacion_ia, {bold:false, color:amber});
   if(r.pago&&r.pago.enviado_en){ y-=4; title('Pago'); kv('Enviada a pago', fmtDT(r.pago.enviado_en)+(r.pago.enviado_por?' por '+r.pago.enviado_por:'')); const dc=r.pago.decision; if(dc&&dc.estado){ kv('Decisión', (dc.estado==='autorizada'?'PAGO AUTORIZADO':'DEVUELTA CON OBSERVACIONES')+' por '+dc.admin+' · '+fmtDT(dc.decidido_en), {color:dc.estado==='autorizada'?brand:red}); if(dc.estado==='autorizada') kv('Forma de pago', dc.forma==='contado'?'Contado · urgencia '+(dc.urgencia||'—'):'A plazo · '+(dc.plazo_dias?dc.plazo_dias+' días':'')+(dc.fecha_plazo?' · '+fmtDate(dc.fecha_plazo):'')); if(dc.obs) kv('Observaciones', dc.obs, {bold:false}); if(dc.hash) kv('Verificación', 'SHA-256 '+dc.hash, {bold:false}); } else kv('Decisión','Pendiente', {bold:false}); }
   /* fotos de los documentos: una por fila, al ancho de la hoja, para que se puedan leer */
-  const docs=[]; if(f.foto_factura) docs.push({du:f.foto_factura, lab:'Factura'}); (f.guias||[]).forEach((g,i)=>{ const n=f.guias.length>1?' '+(i+1):''; if(g.foto) docs.push({du:g.foto, lab:'Guía de traslado'+n}); if(g.cota_foto) docs.push({du:g.cota_foto, lab:'COTA'+n}); });
+  const docs=[]; const fd2=(f.docs||{facturas:[],guias:[],cotas:[]}); [['facturas','Factura'],['guias','Guía de traslado'],['cotas','COTA']].forEach(([k,lab])=>fd2[k].forEach((d,i)=>docs.push({du:d.foto, lab:lab+(fd2[k].length>1?' '+(i+1):'')+(ex[k]&&ex[k][i]&&ex[k][i].nro?' · '+ex[k][i].nro:'')})));
   if(docs.length){ if(y-M<400) header('DOCUMENTOS · FOTOS'); else { y-=6; title('Fotos de los documentos'); }
     for(const dd of docs){ let img; try{ img=await embedDataUrl(dd.du); }catch(e){ continue; } const fullW=W-M*2, maxH=Math.min(360, img.height*(fullW/img.width)); let sc=Math.min(fullW/img.width, maxH/img.height); let ih=img.height*sc; if(y-ih-18<M){ header('DOCUMENTOS · FOTOS (cont.)'); sc=Math.min(fullW/img.width,(y-M-18)/img.height); ih=img.height*sc; } const iw=img.width*sc; const px=M+(fullW-iw)/2, py=y-ih; page.drawImage(img,{x:px,y:py,width:iw,height:ih}); page.drawRectangle({x:px,y:py,width:iw,height:ih,borderColor:line,borderWidth:.5}); page.drawText(ansi(dd.lab),{x:px,y:py-10,size:8,font:bold,color:grey}); y=py-22; } }
   footer(); return await pdf.save(); }
@@ -1489,7 +1589,7 @@ async function enviarPago(x){ const msg=$('done-msg'); const r=buildRecord(x); i
   if(iaEst!=='ok'){ if(iaEst==='pendiente'||iaEst==='error_servicio'||iaEst==='verificando'){ msg.className='msg'; msg.classList.remove('hidden'); msg.textContent='Verificando la guía y la factura con la IA antes de enviar…'; const okIA=await verificarIA(x.id,true); const x2=await dbGet(x.id); if(x2){ x=x2; doneW=x2; renderDoneStatus(x2); } const e2=(x.ia&&x.ia.estado)||'pendiente'; if(!okIA||e2==='pendiente'||e2==='error_servicio'){ if(!esAdmin()){ msg.className='msg warn'; msg.textContent='No se pudo completar la verificación IA. Intente de nuevo en un momento; si sigue fallando, avise a un administrador (ellos pueden enviar igual con justificación).'; return; } } }
     const e3=(x.ia&&x.ia.estado)||'pendiente'; if(e3!=='ok'){ const txt = e3==='errores' ? 'La IA encontró diferencias entre la guía, la factura y los datos cargados. Puede corregir (Editar) o enviar igual explicando por qué.' : e3==='advertencias' ? 'La verificación tiene advertencias. Si están revisadas, explique brevemente y envíe.' : 'No hay verificación IA de esta orden. Explique por qué se envía sin verificar.'; if(e3==='errores' && !esAdmin()){ msg.className='msg bad'; msg.classList.remove('hidden'); msg.textContent='La IA encontró diferencias: corrija la guía, la factura o los datos bancarios y vuelva a verificar. Solo un administrador puede enviar con diferencias.'; return; } justificacion=await pedirJustificacion(txt); if(justificacion===null){ msg.classList.add('hidden'); return; } } }
   msg.className='msg'; msg.classList.remove('hidden'); msg.textContent='Generando el PDF y enviando a los administradores…'; $('btn-enviar-pago').disabled=true;
-  try{ const files=await buildFiles(x); const payload={ tipo:'enviar_pago', id:x.id, registro:files.r, justificacion_ia:justificacion||null, nombre_pdf:files.pdfFile.name, pdf_base64:b64(files.pdfBytes), fotos:{ animales:x.form.foto_animales||null, factura:x.form.foto_factura||null, guias:x.form.guias.filter(g=>g.foto).map(g=>g.foto), cotas:x.form.guias.filter(g=>g.cota_foto).map(g=>g.cota_foto) }, wrapper:paraNube(x) };
+  try{ const files=await buildFiles(x); const payload={ tipo:'enviar_pago', id:x.id, registro:files.r, justificacion_ia:justificacion||null, nombre_pdf:files.pdfFile.name, pdf_base64:b64(files.pdfBytes), fotos:{ facturas:formDe(x).docs.facturas.map(d=>d.foto), guias:formDe(x).docs.guias.map(d=>d.foto), cotas:formDe(x).docs.cotas.map(d=>d.foto) }, wrapper:paraNube(x) };
     const j=await post(payload,{timeout:180000}); await enCola(async()=>{ const x2=await dbGet(x.id); if(!x2) return; x2.pago=Object.assign({},x2.pago||{},{enviado_en:new Date().toISOString(), enviado_por:sesion.nombre, token:j.token||(x2.pago&&x2.pago.token)||null, decision:null, justificacion_ia:justificacion||null}); x2.version=(x2.version||1); logEntry(x2,'enviada a pago','correo a '+(j.destinatarios||'administradores')); x2.nube=Object.assign({},x2.nube||{},{pendiente:true}); await dbPut(x2); doneW=x2; });
     const x3=await dbGet(x.id); msg.className='msg ok'; msg.textContent='Enviada: '+(j.destinatarios||'los administradores')+' recibieron el correo con el PDF y el enlace para autorizar el pago.'; renderDoneStatus(x3); renderPagoPanel(x3); $('btn-enviar-pago').innerHTML='📤 Reenviar a pago (actualizada)<span class="sub" id="pago-sub">Ya enviada · reenvíe solo si la modificó</span>'; programarSubida(2000); renderHome(); }
   catch(e){ msg.className='msg bad'; msg.textContent='No se pudo enviar: '+(e.message||e)+'. La orden quedó guardada; intente de nuevo.'; }
@@ -1506,7 +1606,7 @@ async function consultarEstados(lista, avisar){ if(!navigator.onLine||!sesion) r
 let syncing=false;
 async function syncPendientes(){ if(syncing||!sesion||!navigator.onLine) return; syncing=true;
   try{ await procesarBorradosNube(); await subirRespaldos(); const todos=await dbAll();
-    for(const x of todos){ const f=x.form||{}; const fotos=docsOkDe(f); const est=(x.ia&&x.ia.estado)||'pendiente'; const viejo = est==='error_servicio' && x.ia.intento_en && (Date.now()-new Date(x.ia.intento_en).getTime()>10*60*1000); if(fotos && (est==='pendiente' || viejo || (x.ia&&x.ia.hash&&x.ia.hash!==iaHashDe(f)&&est!=='verificando'))){ await verificarIA(x.id,false); } }
+    for(const x of todos){ const f=formDe(x); const fotos=docsOkDe(f); const est=(x.ia&&x.ia.estado)||'pendiente'; const viejo = est==='error_servicio' && x.ia.intento_en && (Date.now()-new Date(x.ia.intento_en).getTime()>10*60*1000); if(fotos && (est==='pendiente' || viejo || (x.ia&&x.ia.hash&&x.ia.hash!==iaHashDe(f)&&est!=='verificando'))){ await verificarIA(x.id,false); } }
     const env=(await dbAll()).filter(x=>x.pago&&x.pago.enviado_en&&!(x.pago.decision&&x.pago.decision.estado)); if(env.length) await consultarEstados(env,false);
     if(!usuarios.actualizado || Date.now()-new Date(usuarios.actualizado).getTime()>6*3600*1000) await cargarUsuarios(true);
     if(!cfg.cambio_fecha || cfg.cambio_fecha!==todayISO()) traerCambio(); }
@@ -1545,7 +1645,10 @@ loadCfg(); saveCfg(); loadUsuarios(); loadSesion(); updateNet(); pintarLogin();
 if(sesion){ pintarWho(); renderHome(); show('scr-home'); syncPendientes(); } else { show('scr-login'); if(navigator.onLine) cargarUsuarios(true).then(pintarLogin); }
 try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().then(ok=>console.log('almacenamiento persistente:',ok)); }catch(e){}
 setInterval(()=>{ if(navigator.onLine) syncPendientes(); }, 5*60*1000);
-if('serviceWorker' in navigator && location.protocol.startsWith('http')){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+/* actualización automática del app: si GitHub tiene una versión nueva, se instala y la página se recarga una vez (sin perder nada: todo está guardado en el teléfono) */
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){ let recargado=false; const hayControl=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(recargado||!hayControl) return; recargado=true; try{ if(formActivo()&&dirty) saveDraft(true); }catch(e){} setTimeout(()=>location.reload(),300); });
+  navigator.serviceWorker.register('sw.js').then(reg=>{ const buscar=()=>reg.update().catch(()=>{}); buscar(); setInterval(buscar, 30*60*1000); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') buscar(); }); }).catch(()=>{}); }
 })();
 
 </script>
