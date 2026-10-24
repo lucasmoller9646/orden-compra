@@ -641,7 +641,7 @@ input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and
       <div class="card stack">
         <div class="section-title"><span class="dot"></span><h3>4 · Video del lote carimbado</h3></div>
         <div class="photo">
-          <label class="f"><span class="req">Video de los animales ya carimbados</span><span class="hint">Grábelo al terminar el pesaje. Queda en Google Drive y el PDF lleva un botón con cámara que lo abre. Hasta 45 s (máximo <span id="video-lim"></span>).</span></label>
+          <label class="f"><span class="req">Video de los animales ya carimbados</span><span class="hint">Grábelo al terminar el pesaje. Queda en Google Drive y el PDF lleva un botón con cámara que lo abre. Sin límite de duración ni de tamaño: si es largo, tarda más en subir (se sube por partes y sigue donde quedó si se corta la señal).<span id="video-lim" class="hidden"></span></span></label>
           <div class="chip hidden" id="video-chip"><b>🎥</b><span id="video-nombre"></span><button type="button" id="btn-quitar-video" aria-label="Quitar video">✕</button></div>
           <div class="msg hidden" id="video-msg"></div>
           <div class="row"><button class="btn" type="button" id="btn-video-cam">🎥 Grabar video</button><button class="btn" type="button" id="btn-video-gal">📁 Elegir video</button></div>
@@ -941,12 +941,12 @@ const LOGO_PDF_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAaIAAAB4CAYAAACw2faSAACLZklEQVR42u
    Construido sobre el app "Registro de manejo" (misma base: PWA sin conexión, IndexedDB + autoguardado,
    copia en la nube, contraseñas de 4 números verificadas por el servidor, PDF con pdf-lib, mapa OSM).
    ===================================================================================================== */
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.5.1';
 const ESQUEMA = 'compras-ypoti/1';
 const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzpJMDSnuFe7jQjVYM7pqa-Q1Jnydm21VRosUvgcLKhAv8DFrDMRrV5ih-A9sLAhXX0Tg/exec'; // URL /exec del servidor (Apps Script) · ver README
 const EMPRESA = { razon_social:'RURAL BIOENERGIA S.A.', ruc:'80050418-6', ruc_base:'80050418' };
 const CAPACIDAD_VIAJE = 52; // animales por camión/jaula (aprox.)
-const VIDEO_MAX_MB = 80;    // tamaño máximo del video (se sube por partes al Drive)
+const VIDEO_MAX_MB = 0;     // 0 = sin límite de tamaño (se sube por partes directo al Drive)
 /* Estancias del grupo: código SENACSA, coordenadas del punto de entrega (para la distancia por ruta) y km extra desde el acceso. */
 const ESTANCIAS = [
   {n:'Ypoti',        cod:'0103780002', lat:-23.3164872, lng:-56.7105993, ref:'el punto de entrega'},
@@ -1348,10 +1348,10 @@ $('btn-add-banco').addEventListener('click',()=>{ F.bancos.push(nuevoBanco()); d
 /* ---------- video (queda en el teléfono y se sube por partes al Drive) ---------- */
 $('btn-video-cam').addEventListener('click',()=>{ const i=$('file-video'); i.setAttribute('capture','environment'); i.click(); });
 $('btn-video-gal').addEventListener('click',()=>{ const i=$('file-video'); i.removeAttribute('capture'); i.click(); });
-$('file-video').addEventListener('change',async e=>{ const f=e.target.files[0]; if(!f) return; e.target.value=''; if(f.size>VIDEO_MAX_MB*1048576){ toast('El video pesa '+fmtBytes(f.size)+': el máximo es '+VIDEO_MAX_MB+' MB. Grabe uno más corto.'); return; }
-  try{ await videoPut(formId,f); w.video={nombre:f.name||('video_'+formId.slice(0,8)+'.mp4'), tipo:f.type||'video/mp4', tamano:f.size, estado:'local', partes_subidas:0, url:null, id_drive:null}; dirty=true; renderVideo(); toast('Video guardado en el teléfono: se sube al Drive cuando haya señal.'); programarSubida(2000); }catch(err){ toast('No se pudo guardar el video: '+err.message); } });
+$('file-video').addEventListener('change',async e=>{ const f=e.target.files[0]; if(!f) return; e.target.value=''; if(VIDEO_MAX_MB && f.size>VIDEO_MAX_MB*1048576){ toast('El video pesa '+fmtBytes(f.size)+': el máximo es '+VIDEO_MAX_MB+' MB. Grabe uno más corto.'); return; }
+  try{ await videoPut(formId,f); w.video={nombre:f.name||('video_'+formId.slice(0,8)+'.mp4'), tipo:f.type||'video/mp4', tamano:f.size, estado:'local', partes_subidas:0, url:null, id_drive:null}; dirty=true; renderVideo(); toast('Video guardado en el teléfono ('+fmtBytes(f.size)+'): se sube al Drive cuando haya señal'+(f.size>200*1048576?'; por el tamaño puede tardar bastante':'')+'.'); programarSubida(2000); }catch(err){ toast('No se pudo guardar el video: '+err.message); } });
 $('btn-quitar-video').addEventListener('click',async()=>{ if(!confirm('¿Quitar el video de esta orden?')) return; try{ await videoDel(formId); }catch(e){} w.video=null; dirty=true; renderVideo(); });
-function renderVideo(){ const v=w&&w.video; $('video-lim').textContent=VIDEO_MAX_MB+' MB'; $('video-chip').classList.toggle('hidden',!v); const m=$('video-msg'); if(!v){ m.classList.add('hidden'); return; } $('video-nombre').textContent=v.nombre+' · '+fmtBytes(v.tamano); m.classList.remove('hidden'); m.className='msg '+(v.estado==='subido'?'ok':v.estado==='error'?'bad':'');
+function renderVideo(){ const v=w&&w.video;  $('video-chip').classList.toggle('hidden',!v); const m=$('video-msg'); if(!v){ m.classList.add('hidden'); return; } $('video-nombre').textContent=v.nombre+' · '+fmtBytes(v.tamano); m.classList.remove('hidden'); m.className='msg '+(v.estado==='subido'?'ok':v.estado==='error'?'bad':'');
   m.textContent = v.estado==='subido' ? '✓ Subido al Drive. El PDF lleva el botón para abrirlo.' : v.estado==='subiendo' ? '☁ Subiendo al Drive… parte '+(v.partes_subidas||0)+' de '+Math.ceil(v.tamano/VIDEO_PARTE) : v.estado==='error' ? 'No se pudo subir ('+(v.error||'')+'): se reintenta solo con señal.' : '☁ Se sube al Drive cuando haya señal.'; }
 
 /* ---------- verificación IA (facturas + guías + COTAs + cuentas) ---------- */
@@ -1692,7 +1692,7 @@ async function subirVideos(){ if(videoSubiendo||!navigator.onLine||!sesion) retu
       for(;parte<total;parte++){ const chunk=v.blob.slice(parte*VIDEO_PARTE, (parte+1)*VIDEO_PARTE); let b64s; try{ b64s=await blobB64(chunk); }catch(e){ ok=false; break; }
         try{ const j=await post({tipo:'video_parte', id:x.id, subida_id:subidaId, parte:parte+1, total, nombre:x.video.nombre, mime:x.video.tipo||'video/mp4', tamano:v.blob.size, datos:b64s},{timeout:120000});
           await enCola(async()=>{ const x2=await dbGet(x.id); if(!x2||!x2.video) return; x2.video.partes_subidas=parte+1; if(j.url){ x2.video.estado='subido'; x2.video.url=j.url; x2.video.id_drive=j.id_drive||null; x2.video.subido_en=new Date().toISOString(); logEntry(x2,'video subido al Drive'); x2.nube=Object.assign({},x2.nube||{},{pendiente:true}); } await dbPut(x2); if(w&&w.id===x.id){ w.video=x2.video; if(formActivo()) renderVideo(); } }); }
-        catch(e){ ok=false; await enCola(async()=>{ const x2=await dbGet(x.id); if(x2&&x2.video){ x2.video.estado='error'; x2.video.error=String(e.message||e); await dbPut(x2); if(w&&w.id===x.id){ w.video=x2.video; if(formActivo()) renderVideo(); } } }); break; } }
+        catch(e){ ok=false; await enCola(async()=>{ const x2=await dbGet(x.id); if(x2&&x2.video){ x2.video.estado='error'; x2.video.error=String(e.message||e); if(/venci|reinicia/.test(x2.video.error)){ x2.video.partes_subidas=0; x2.video.subida_id=null; } await dbPut(x2); if(w&&w.id===x.id){ w.video=x2.video; if(formActivo()) renderVideo(); } } }); break; } }
       if(ok){ toast('Video subido al Drive.'); if(doneW&&doneW.id===x.id){ const x2=await dbGet(x.id); if(x2) openDone(x2); } } }
   } finally{ videoSubiendo=false; } }
 function blobB64(blob){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(',')[1]); fr.onerror=()=>rej(new Error('No se pudo leer el video')); fr.readAsDataURL(blob); }); }
