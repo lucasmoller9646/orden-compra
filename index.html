@@ -941,7 +941,7 @@ const LOGO_PDF_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAaIAAAB4CAYAAACw2faSAACLZklEQVR42u
    Construido sobre el app "Registro de manejo" (misma base: PWA sin conexión, IndexedDB + autoguardado,
    copia en la nube, contraseñas de 4 números verificadas por el servidor, PDF con pdf-lib, mapa OSM).
    ===================================================================================================== */
-const APP_VERSION = '1.5.1';
+const APP_VERSION = '1.5.2';
 const ESQUEMA = 'compras-ypoti/1';
 const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzpJMDSnuFe7jQjVYM7pqa-Q1Jnydm21VRosUvgcLKhAv8DFrDMRrV5ih-A9sLAhXX0Tg/exec'; // URL /exec del servidor (Apps Script) · ver README
 const EMPRESA = { razon_social:'RURAL BIOENERGIA S.A.', ruc:'80050418-6', ruc_base:'80050418' };
@@ -1381,16 +1381,17 @@ function renderIA(){ if(!w) return; const est=iaEstado(); const b=$('ia-badge');
   (e.cotas||[]).forEach((c,i)=>{ filas.push(['COTA '+(i+1),(c.nro||'—')+(c.guia_nro?' · guía '+c.guia_nro:'')+(c.total_animales!=null?' · '+c.total_animales+' animales':'')+(c.destino_nombre?' · '+c.destino_nombre:'')]); });
   if(filas.length){ ex.classList.remove('hidden'); filas.forEach(([k,v])=>{ const dt=document.createElement('dt'); dt.textContent=k; const dd=document.createElement('dd'); dd.textContent=v; ex.appendChild(dt); ex.appendChild(dd); }); } }
 let iaEnCurso=false;
+async function esperarIA(ms){ const t0=Date.now(); while(iaEnCurso && Date.now()-t0<(ms||240000)) await new Promise(r=>setTimeout(r,1000)); return !iaEnCurso; }
 async function verificarIA(id, manual){ const w0=await dbGet(id); if(!w0||!w0.form) return false; const f=migrarForm(w0.form); if(!docsOkDe(f)) return false;
   if(!manual && w0.ia && ['ok','advertencias','errores'].includes(w0.ia.estado) && w0.ia.hash && w0.ia.hash===iaHashDe(f)) return true; /* ya verificada con estas mismas fotos y datos */
-  if(!navigator.onLine){ if(manual) toast('Sin señal: la verificación se hace sola cuando vuelva la conexión.'); return false; } if(iaEnCurso) return false; iaEnCurso=true;
+  if(!navigator.onLine){ if(manual) toast('Sin señal: la verificación se hace sola cuando vuelva la conexión.'); return false; } if(iaEnCurso){ if(!manual) return false; /* ya hay una verificación corriendo (la automática): se espera a que termine en vez de fallar */ await esperarIA(); const xf=await dbGet(id); if(xf&&xf.ia&&['ok','advertencias','errores'].includes(xf.ia.estado)&&xf.ia.hash===iaHashDe(migrarForm(xf.form))) return true; if(iaEnCurso) return false; } iaEnCurso=true;
   const hash=iaHashDe(f); const c=calc(f); const b64of=du=>du.split(',')[1];
   await enCola(async()=>{ const x=await dbGet(id); if(x){ x.ia=Object.assign({},x.ia||{},{estado:'verificando'}); await dbPut(x); } }); if(w&&w.id===id){ w.ia=Object.assign({},w.ia||{},{estado:'verificando'}); renderIA(); }
   try{ const body={ tipo:'verificar_ia', version:2, id, datos:{ proveedor:f.proveedor, comisionista:f.comisionista||'', destino:f.destino, destino_codigo:(estancia(f.destino)||{}).cod||'', cantidad:c.cab, total:Math.round(c.pagar), facturar:(facturacion(f)||{fa:{}}).fa.total||null, precio_modo:f.precio_modo, precio:num(f.precio), fecha:f.fecha, medio_pago:f.pago_medio||'', bancos:bancosPago(f) },
       facturas:f.docs.facturas.map(d=>b64of(d.foto)), guias:f.docs.guias.map(d=>b64of(d.foto)), cotas:f.docs.cotas.map(d=>b64of(d.foto)) };
     const j=await post(body,{timeout:180000}); const res=j.ia||{};
     await enCola(async()=>{ const x=await dbGet(id); if(!x) return; x.ia={estado:res.estado||'error_servicio', resultado:res, hash, verificado_en:new Date().toISOString()}; logEntry(x,'verificación IA: '+(res.estado||'?'), res.resumen||null); x.nube=Object.assign({},x.nube||{},{pendiente:true}); await dbPut(x); if(w&&w.id===id){ w.ia=x.ia; } });
-    if(w&&w.id===id&&formActivo()){ renderIA(); renderDocs(); } programarSubida(3000); if(res.estado==='errores') toast('La IA encontró diferencias: revise la verificación.'); else if(res.estado==='advertencias') toast('Verificación con advertencias.'); else if(manual) toast('Verificación IA: todo coincide.'); renderHome(); return true; }
+    if(w&&w.id===id&&formActivo()){ renderIA(); renderDocs(); } if(doneW&&doneW.id===id&&$('scr-done').classList.contains('active')&&!enviandoPago){ const xd=await dbGet(id); if(xd) openDone(xd); } programarSubida(3000); if(res.estado==='errores') toast('La IA encontró diferencias: revise la verificación.'); else if(res.estado==='advertencias') toast('Verificación con advertencias.'); else if(manual) toast('Verificación IA: todo coincide.'); renderHome(); return true; }
   catch(e){ await enCola(async()=>{ const x=await dbGet(id); if(x){ x.ia=Object.assign({},x.ia||{},{estado:'error_servicio', error:String(e.message||e), intento_en:new Date().toISOString()}); await dbPut(x); if(w&&w.id===id) w.ia=x.ia; } }); if(w&&w.id===id&&formActivo()) renderIA(); if(manual) toast('No se pudo verificar: '+(e.message||e)); return false; }
   finally{ iaEnCurso=false; } }
 $('btn-ia').addEventListener('click',async()=>{ if(!formId) return; try{ await enCola(()=>saveDraft(true)); }catch(e){} verificarIA(formId,true); });
@@ -1702,8 +1703,10 @@ function borrarNube(id){ const l=listaBorrar(); if(!l.includes(id)){ l.push(id);
 async function procesarBorradosNube(){ if(!navigator.onLine||!sesion) return; for(const id of listaBorrar()){ try{ await post({tipo:'borrar_respaldo', id},{timeout:30000}); guardarListaBorrar(listaBorrar().filter(x=>x!==id)); }catch(e){ if(e.servidor) guardarListaBorrar(listaBorrar().filter(x=>x!==id)); } } }
 
 /* ---------- enviar a pago ---------- */
-async function enviarPago(x){ const msg=$('done-msg'); const r=buildRecord(x); if(r.faltantes.length){ toast('Faltan datos obligatorios.'); return; }
-  const iaEst=(x.ia&&x.ia.estado)||'pendiente'; let justificacion='';
+let enviandoPago=false;
+async function enviarPago(x){ if(enviandoPago) return; enviandoPago=true; try{ return await enviarPagoCore(x); } finally{ enviandoPago=false; const xd=doneW&&await dbGet(doneW.id); if(xd&&$('scr-done').classList.contains('active')){ doneW=xd; renderDoneKv(xd); renderDoneStatus(xd); renderPagoPanel(xd); } } }
+async function enviarPagoCore(x){ const msg=$('done-msg'); const r=buildRecord(x); if(r.faltantes.length){ toast('Faltan datos obligatorios.'); return; }
+  let justificacion=''; if(iaEnCurso){ msg.className='msg'; msg.classList.remove('hidden'); msg.textContent='Esperando que termine la verificación IA…'; await esperarIA(); x=(await dbGet(x.id))||x; doneW=x; } const iaEst=(x.ia&&x.ia.estado)||'pendiente';
   if(!navigator.onLine){ msg.className='msg warn'; msg.classList.remove('hidden'); msg.textContent='Sin señal: conecte el teléfono para enviar a pago (hay que mandar el correo a los administradores).'; return; }
   if(iaEst!=='ok'){ if(iaEst==='pendiente'||iaEst==='error_servicio'||iaEst==='verificando'){ msg.className='msg'; msg.classList.remove('hidden'); msg.textContent='Verificando la guía y la factura con la IA antes de enviar…'; const okIA=await verificarIA(x.id,true); const x2=await dbGet(x.id); if(x2){ x=x2; doneW=x2; renderDoneStatus(x2); } const e2=(x.ia&&x.ia.estado)||'pendiente'; if(!okIA||e2==='pendiente'||e2==='error_servicio'){ if(!esAdmin()){ msg.className='msg warn'; msg.textContent='No se pudo completar la verificación IA. Intente de nuevo en un momento; si sigue fallando, avise a un administrador (ellos pueden enviar igual con justificación).'; return; } } }
     const e3=(x.ia&&x.ia.estado)||'pendiente'; if(e3!=='ok'){ const txt = e3==='errores' ? 'La IA encontró diferencias entre la guía, la factura y los datos cargados. Puede corregir (Editar) o enviar igual explicando por qué.' : e3==='advertencias' ? 'La verificación tiene advertencias. Si están revisadas, explique brevemente y envíe.' : 'No hay verificación IA de esta orden. Explique por qué se envía sin verificar.'; if(e3==='errores' && !esAdmin()){ msg.className='msg bad'; msg.classList.remove('hidden'); msg.textContent='La IA encontró diferencias: corrija la guía, la factura o los datos bancarios y vuelva a verificar. Solo un administrador puede enviar con diferencias.'; return; } justificacion=await pedirJustificacion(txt); if(justificacion===null){ msg.classList.add('hidden'); return; } } }
