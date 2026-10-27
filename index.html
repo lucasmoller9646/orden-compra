@@ -645,6 +645,7 @@ input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and
           <div class="chip hidden" id="video-chip"><b>🎥</b><span id="video-nombre"></span><button type="button" id="btn-quitar-video" aria-label="Quitar video">✕</button></div>
           <div class="msg hidden" id="video-msg"></div>
           <div class="row"><button class="btn" type="button" id="btn-video-cam">🎥 Grabar video</button><button class="btn" type="button" id="btn-video-gal">📁 Elegir video</button></div>
+          <span class="hint" id="video-calidad-hint">«Grabar video» graba dentro del app en alta calidad (1080p). En iPhone, los videos elegidos de Fotos llegan reducidos (1024×576): si puede, grábelo desde el app.</span>
           <input type="file" id="file-video" accept="video/*" style="display:none">
         </div>
       </div>
@@ -652,6 +653,11 @@ input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and
       <div class="card stack">
         <div class="section-title"><span class="dot"></span><h3>5 · Destino y flete</h3></div>
         <label class="f"><span class="req">Estancia de destino</span><select id="f-destino"></select><span class="hint" id="destino-cod"></span></label>
+        <div class="card flat stack facturar hidden" id="guia-datos" style="gap:8px">
+          <div class="ft">Datos para la guía, la COTA y la factura (para el vendedor)</div>
+          <div class="fl" id="guia-datos-lista"></div>
+          <div class="row"><button class="btn" type="button" id="btn-guia-copiar">📋 Copiar</button><button class="btn" type="button" id="btn-guia-wa" style="border-color:#128C7E;color:#128C7E">💬 WhatsApp al vendedor</button></div>
+        </div>
         <label class="f"><span class="req">Distancia por ruta hasta el destino (km)</span><input type="number" inputmode="decimal" step="any" id="f-km" placeholder="km"></label>
         <div class="row"><button class="btn" type="button" id="btn-km">🛣 Calcular y ver la ruta</button><button class="btn hidden" type="button" id="btn-ver-ruta">🗺 Ver ruta</button></div>
         <span class="hint" id="km-status">Con la ubicación del corral y el destino, el app calcula los km por ruta y muestra el camino en el mapa. Si no es coherente, escríbalos a mano.</span>
@@ -838,6 +844,21 @@ input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and
   </div>
 </div>
 
+<div id="rec-modal" class="modal hidden" style="padding:0;background:#000;align-items:stretch">
+  <div style="display:flex;flex-direction:column;width:100%;height:100%;position:relative">
+    <video id="rec-preview" autoplay muted playsinline style="flex:1;min-height:0;width:100%;object-fit:cover;background:#000"></video>
+    <div style="position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;color:#fff;font-family:var(--font-mono);font-size:14px">
+      <span id="rec-estado" style="background:rgba(0,0,0,.55);padding:6px 10px;border-radius:999px">Listo para grabar</span>
+      <span id="rec-tiempo" style="background:rgba(0,0,0,.55);padding:6px 10px;border-radius:999px">00:00</span>
+    </div>
+    <div style="position:absolute;bottom:0;left:0;right:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));display:flex;gap:10px;background:linear-gradient(transparent,rgba(0,0,0,.7))">
+      <button class="btn" type="button" id="rec-cancel" style="flex:1">✕ Cancelar</button>
+      <button class="btn ok" type="button" id="rec-start" style="flex:2">● Grabar</button>
+      <button class="btn danger hidden" type="button" id="rec-stop" style="flex:2">■ Terminar y guardar</button>
+    </div>
+    <p class="hint" style="position:absolute;bottom:calc(78px + env(safe-area-inset-bottom));left:16px;right:16px;color:#ddd;text-align:center;background:rgba(0,0,0,.45);border-radius:10px;padding:6px 10px">Animales uno a uno, en la misma posición, con la marca a la vista.</p>
+  </div>
+</div>
 <div id="override-modal" class="modal hidden">
   <div class="card stack" style="max-width:420px;width:100%">
     <h2>Observaciones de la IA</h2>
@@ -941,7 +962,7 @@ const LOGO_PDF_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAaIAAAB4CAYAAACw2faSAACLZklEQVR42u
    Construido sobre el app "Registro de manejo" (misma base: PWA sin conexión, IndexedDB + autoguardado,
    copia en la nube, contraseñas de 4 números verificadas por el servidor, PDF con pdf-lib, mapa OSM).
    ===================================================================================================== */
-const APP_VERSION = '1.5.5';
+const APP_VERSION = '1.6.0';
 const ESQUEMA = 'compras-ypoti/1';
 const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzpJMDSnuFe7jQjVYM7pqa-Q1Jnydm21VRosUvgcLKhAv8DFrDMRrV5ih-A9sLAhXX0Tg/exec'; // URL /exec del servidor (Apps Script) · ver README
 const EMPRESA = { razon_social:'RURAL BIOENERGIA S.A.', ruc:'80050418-6', ruc_base:'80050418' };
@@ -1136,7 +1157,8 @@ function pesoTotalDe(f){ if(f.precio_modo==='kg') return (f.pesos||[]).reduce((a
 function promedioDe(f){ if(f.precio_modo==='kg'){ const n=(f.pesos||[]).length; return n? pesoTotalDe(f)/n : 0; } return num(f.peso_est); }
 function cabezas(){ return cabezasDe(F); }
 function addPeso(){ const inp=$('peso-input'); const v=num(inp.value); if(!(v>0)){ inp.focus(); return; } F.pesos.push(v); inp.value=''; dirty=true; renderPesos(); inp.focus(); }
-function renderPesosValores(){ document.querySelectorAll('#weights .w').forEach((d,i)=>{ const vs=d.querySelector('.v'); const pr=F.precio_modo==='kg'?precioDePeso(F,F.pesos[i]):0; vs.textContent=(pr>0&&F.pesos[i]>0)?'Valor: '+gs(F.pesos[i]*pr)+(esRango(F)?' ('+fmt(pr)+'/kg)':''):(esRango(F)&&F.pesos[i]>0?'Fuera de los rangos':''); }); }
+/* v1.6: la hoja de pesaje muestra solo el peso (sin valor por animal); en compra por rango avisa si un peso queda fuera de los rangos */
+function renderPesosValores(){ document.querySelectorAll('#weights .w').forEach((d,i)=>{ const vs=d.querySelector('.v'); const pr=F.precio_modo==='kg'?precioDePeso(F,F.pesos[i]):0; vs.textContent=(esRango(F)&&F.pesos[i]>0&&!(pr>0))?'Fuera de los rangos':''; }); }
 function renderPesos(){ const box=$('weights'); box.innerHTML='';
   if(!F.pesos.length) box.innerHTML='<div class="empty">Todavía no hay pesadas.</div>';
   F.pesos.forEach((v,i)=>{ const d=document.createElement('div'); d.className='w'; const n=document.createElement('span'); n.className='n'; n.textContent=i+1; const inp=document.createElement('input'); inp.type='number'; inp.inputMode='decimal'; inp.step='any'; inp.value=v; inp.setAttribute('aria-label','Pesada '+(i+1));
@@ -1165,6 +1187,26 @@ function facturacion(F){ const c=calc(F); const cab=c.cab; if(!c.ok) return null
   const fa={ cantidad:cab, descripcion:cat, unitario:lineas.length===1?lineas[0].unitario:Math.round(total/cab), lineas, total, iva5:Math.round(total/21), redondeo: total-Math.round(c.pagar) };
   let fc=null; if(F.com_modo && F.com_modo!=='sin' && c.comOk && c.com>0){ const u2 = F.com_modo==='cab' ? Math.round(num(F.com_tasa)) : Math.round(c.com/cab); const t2=u2*cab; fc={ cantidad:cab, descripcion:'Comisión por '+cab+' animales hasta '+(F.destino&&F.destino!==DESTINO_A_DEFINIR?(e?e.n:F.destino):'la estancia de destino'), unitario:u2, total:t2, iva10:Math.round(t2/11) }; }
   return {fa, fc}; }
+/* v1.6: esquema de una factura modelo (sin datos del vendedor) con los valores en las casillas correctas */
+function facturaModeloSVG(o){ const X=x=>esc(String(x)); const ivaCol=o.iva===10?5:4; const lin=o.lineas.slice(0,3); const W=640, rowH=26, tableY=168, rows=Math.max(lin.length,2), H=tableY+rowH*(rows+2)+108;
+  const cols=[0,62,314,420,486,562,640]; const headCols=['Cant.','Descripción','Precio unit.','Exentas','5 %','10 %'];
+  const cell=(i,yy,txt,opt)=>{ opt=opt||{}; const x0=cols[i], x1=cols[i+1]; const hl=opt.hl?'<rect x="'+x0+'" y="'+yy+'" width="'+(x1-x0)+'" height="'+rowH+'" fill="#DCEAE0"/>':''; const anchor=i>=2?'end':'start'; const tx=i>=2?x1-6:x0+6; return hl+'<text x="'+tx+'" y="'+(yy+17)+'" text-anchor="'+anchor+'" font-size="'+(opt.size||12)+'" font-weight="'+(opt.b?'700':'400')+'" fill="'+(opt.hl?'#04522B':'#3E4D44')+'" font-family="'+(opt.mono?'ui-monospace, Menlo, monospace':'inherit')+'">'+X(txt)+'</text>'; };
+  let g='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;font-family:inherit"><rect x="1" y="1" width="'+(W-2)+'" height="'+(H-2)+'" rx="6" fill="#FFFFFF" stroke="#8FA898" stroke-width="2"/>';
+  g+='<text x="16" y="28" font-size="11" fill="#8FA898" letter-spacing="1">RAZÓN SOCIAL DEL VENDEDOR · RUC · DIRECCIÓN</text><line x1="16" y1="42" x2="330" y2="42" stroke="#C9D3CC"/><line x1="16" y1="60" x2="250" y2="60" stroke="#C9D3CC"/>';
+  g+='<rect x="400" y="12" width="224" height="62" rx="4" fill="none" stroke="#8FA898"/><text x="512" y="34" text-anchor="middle" font-size="16" font-weight="700" fill="#17241C">FACTURA</text><text x="512" y="52" text-anchor="middle" font-size="10" fill="#6B7A70">Timbrado N° ________ · vigencia hasta __/__/____</text><text x="512" y="67" text-anchor="middle" font-size="11" fill="#6B7A70">N° 001-001-_______</text>';
+  g+='<line x1="1" y1="84" x2="'+(W-1)+'" y2="84" stroke="#8FA898"/>';
+  g+='<text x="16" y="104" font-size="12" fill="#3E4D44">Fecha de emisión: __/__/____</text><text x="300" y="104" font-size="12" fill="#3E4D44">Condición de venta:  <tspan font-weight="700" fill="#04522B">☒ Contado</tspan>   ☐ Crédito</text>';
+  g+='<rect x="8" y="114" width="'+(W-16)+'" height="40" rx="4" fill="#DCEAE0"/><text x="16" y="131" font-size="12" fill="#3E4D44">Nombre o razón social: <tspan font-weight="700" fill="#04522B">'+X(EMPRESA.razon_social)+'</tspan></text><text x="16" y="148" font-size="12" fill="#3E4D44">RUC: <tspan font-weight="700" fill="#04522B">'+X(EMPRESA.ruc)+'</tspan>  ·  Dirección: Ypoti · Paraguay</text>';
+  /* tabla */
+  g+='<rect x="0" y="'+tableY+'" width="'+W+'" height="'+rowH+'" fill="#04522B"/>'; headCols.forEach((h,i)=>{ const tx=i>=2?cols[i+1]-6:cols[i]+6; g+='<text x="'+tx+'" y="'+(tableY+17)+'" text-anchor="'+(i>=2?'end':'start')+'" font-size="11" font-weight="700" fill="#FFFFFF">'+X(h)+'</text>'; });
+  for(let r=0;r<rows;r++){ const yy=tableY+rowH*(r+1); const l=lin[r]; g+='<line x1="0" y1="'+(yy+rowH)+'" x2="'+W+'" y2="'+(yy+rowH)+'" stroke="#DCD8CB"/>'; if(l){ g+=cell(0,yy,fmt(l.cantidad),{b:true}); g+=cell(1,yy,l.descripcion.length>40?l.descripcion.slice(0,38)+'…':l.descripcion,{size:11}); g+=cell(2,yy,fmt(l.unitario),{mono:true}); g+=cell(3,yy,'—'); g+=cell(4,yy,ivaCol===4?fmt(l.total):'—',{hl:ivaCol===4,b:ivaCol===4,mono:true}); g+=cell(5,yy,ivaCol===5?fmt(l.total):'—',{hl:ivaCol===5,b:ivaCol===5,mono:true}); } }
+  cols.slice(1,-1).forEach(x=>{ g+='<line x1="'+x+'" y1="'+tableY+'" x2="'+x+'" y2="'+(tableY+rowH*(rows+2))+'" stroke="#DCD8CB"/>'; });
+  const ys=tableY+rowH*(rows+1); g+='<rect x="0" y="'+ys+'" width="'+W+'" height="'+rowH+'" fill="#F5F3EC"/>'+cell(1,ys,'SUBTOTAL',{b:true})+cell(3,ys,'0')+cell(4,ys,ivaCol===4?fmt(o.total):'0',{hl:ivaCol===4,b:true,mono:true})+cell(5,ys,ivaCol===5?fmt(o.total):'0',{hl:ivaCol===5,b:true,mono:true});
+  const yt=ys+rowH; g+='<line x1="0" y1="'+yt+'" x2="'+W+'" y2="'+yt+'" stroke="#8FA898"/>';
+  g+='<text x="16" y="'+(yt+22)+'" font-size="12" fill="#3E4D44">TOTAL A PAGAR (en letras): ______________________________________</text><rect x="420" y="'+(yt+6)+'" width="214" height="24" rx="4" fill="#DCEAE0"/><text x="628" y="'+(yt+23)+'" text-anchor="end" font-size="13" font-weight="700" fill="#04522B" font-family="ui-monospace, Menlo, monospace">'+fmt(o.total)+'</text>';
+  g+='<text x="16" y="'+(yt+50)+'" font-size="12" fill="#3E4D44">LIQUIDACIÓN DEL IVA:   (5 %) <tspan font-weight="700" fill="'+(o.iva===5?'#04522B':'#3E4D44')+'" font-family="ui-monospace, Menlo, monospace">'+(o.iva===5?fmt(o.ivaMonto):'0')+'</tspan>     (10 %) <tspan font-weight="700" fill="'+(o.iva===10?'#04522B':'#3E4D44')+'" font-family="ui-monospace, Menlo, monospace">'+(o.iva===10?fmt(o.ivaMonto):'0')+'</tspan>     TOTAL IVA: <tspan font-weight="700" fill="#04522B" font-family="ui-monospace, Menlo, monospace">'+fmt(o.ivaMonto)+'</tspan></text>';
+  g+='<text x="16" y="'+(yt+76)+'" font-size="10.5" fill="#6B7A70">'+X(o.nota||'')+'</text>';
+  g+='</svg>'; return '<div class="factura-modelo"><div class="ft" style="margin-top:8px">'+X(o.titulo)+'</div>'+g+'</div>'; }
 function bloqueFacturar(t, filas){ return '<div class="ft">'+esc(t)+'</div><div class="fl">'+filas.map(([k,v])=>'<span>'+esc(k)+'</span><b>'+esc(v)+'</b>').join('')+'</div>'; }
 function renderTotales(){ const c=calc(F); const d='—';
   $('t-cab').textContent=c.cab; $('t-peso-lbl').textContent = c.modoKg ? 'Peso de los pesados' : 'Peso total estimado'; $('t-peso').textContent=fmt(c.peso,1)+' kg'+(c.modoKg&&c.cab?' ('+c.pesados+' de '+c.cab+')':''); $('t-prom').textContent=c.prom?fmt(c.prom,1)+' kg'+(c.modoKg?'':' (estimado)'):d;
@@ -1176,7 +1218,9 @@ function renderTotales(){ const c=calc(F); const d='—';
   const uOk=c.ok&&c.cambio>0; $('t-usd').textContent=uOk?usd(c.usd.total):d; $('t-usd-cab').textContent=uOk?usd(c.usd.cab):d; $('t-usd-kg').textContent=uOk&&c.usd.kg!=null?usd(c.usd.kg):d; $('t-usd-puesto-cab').textContent=uOk&&pOk?usd(c.usd.puesto_cab):d; $('t-usd-puesto-kg').textContent=uOk&&pOk&&c.usd.puesto_kg!=null?usd(c.usd.puesto_kg):d;
   const fx=facturacion(F); $('fact-animales').innerHTML = fx ? bloqueFacturar('Cómo facturar los animales', fx.fa.lineas.length===1 ? [['Cantidad',fx.fa.cantidad+' cabezas'],['Descripción',fx.fa.descripcion],['Precio unitario (por cabeza)',gs(fx.fa.unitario)],['Columna IVA 5 % (valor a facturar)',gs(fx.fa.total)],['Liquidación del IVA 5 % (total ÷ 21)',gs(fx.fa.iva5)]].concat(fx.fa.redondeo?[['Diferencia por redondeo del precio por cabeza',(fx.fa.redondeo>0?'+':'')+gs(fx.fa.redondeo)]]:[])
       : fx.fa.lineas.flatMap((l,i)=>[['Línea '+(i+1),l.cantidad+' · '+l.descripcion],['  Precio unitario · columna 5 %',gs(l.unitario)+' · '+gs(l.total)]]).concat([['Total columna IVA 5 % (valor a facturar)',gs(fx.fa.total)],['Liquidación del IVA 5 % (total ÷ 21)',gs(fx.fa.iva5)]].concat(fx.fa.redondeo?[['Diferencia por redondeo del precio por cabeza',(fx.fa.redondeo>0?'+':'')+gs(fx.fa.redondeo)]]:[]))) : '<div class="hint">Cómo facturar: complete cantidad, forma de compra, precio y pesaje.</div>';
+  if(fx) $('fact-animales').innerHTML += facturaModeloSVG({ titulo:'Así queda la factura de los animales (modelo)', lineas:fx.fa.lineas, iva:5, total:fx.fa.total, ivaMonto:fx.fa.iva5, nota:'El importe va en la columna del 5 %. Liquidación del IVA 5 % = total ÷ 21. Sin tachaduras ni enmiendas; timbrado vigente.' });
   $('fact-comision').innerHTML = fx&&fx.fc ? bloqueFacturar('Cómo facturar la comisión', [['Cantidad',fx.fc.cantidad],['Descripción',fx.fc.descripcion],['Precio unitario (por cabeza)',gs(fx.fc.unitario)],['Columna IVA 10 % (valor a facturar)',gs(fx.fc.total)],['Liquidación del IVA 10 % (total ÷ 11)',gs(fx.fc.iva10)]]) : (F.com_modo==='sin'?'<div class="hint">Sin comisión en esta compra.</div>':'');
+  if(fx&&fx.fc) $('fact-comision').innerHTML += facturaModeloSVG({ titulo:'Así queda la factura de la comisión (modelo)', lineas:[{cantidad:fx.fc.cantidad, descripcion:fx.fc.descripcion, unitario:fx.fc.unitario, total:fx.fc.total}], iva:10, total:fx.fc.total, ivaMonto:fx.fc.iva10, nota:'La comisión se factura aparte, con el importe en la columna del 10 %. Liquidación del IVA 10 % = total ÷ 11.' });
   if(F.flete.viajes_auto){ const cc=num(F.flete.cab_camion); const v=c.cab&&cc>0?Math.ceil(c.cab/cc):''; if(String(F.flete.viajes)!==String(v)){ F.flete.viajes=v; $('f-flete-viajes').value=v; renderTotales(); } } }
 
 /* ---------- flete: tabla de decisión Toro Pampa × Cerro Porã (mayo/2026) ---------- */
@@ -1354,10 +1398,29 @@ $('btn-add-banco').addEventListener('click',()=>{ F.bancos.push(nuevoBanco()); d
 (function(){ const dl=$('bancos-dl'); BANCOS.forEach(b=>{ const o=document.createElement('option'); o.value=b; dl.appendChild(o); }); })();
 
 /* ---------- video (queda en el teléfono y se sube por partes al Drive) ---------- */
-$('btn-video-cam').addEventListener('click',()=>{ const i=$('file-video'); i.setAttribute('capture','environment'); i.click(); });
+$('btn-video-cam').addEventListener('click',()=>{ if(grabadorDisponible()) abrirGrabador(); else { const i=$('file-video'); i.setAttribute('capture','environment'); i.click(); } });
 $('btn-video-gal').addEventListener('click',()=>{ const i=$('file-video'); i.removeAttribute('capture'); i.click(); });
 $('file-video').addEventListener('change',async e=>{ const f=e.target.files[0]; if(!f) return; e.target.value=''; if(VIDEO_MAX_MB && f.size>VIDEO_MAX_MB*1048576){ toast('El video pesa '+fmtBytes(f.size)+': el máximo es '+VIDEO_MAX_MB+' MB. Grabe uno más corto.'); return; }
   try{ await videoPut(formId,f); w.video={nombre:f.name||('video_'+formId.slice(0,8)+'.mp4'), tipo:f.type||'video/mp4', tamano:f.size, estado:'local', partes_subidas:0, url:null, id_drive:null}; dirty=true; renderVideo(); toast('Video guardado en el teléfono ('+fmtBytes(f.size)+'): se sube al Drive cuando haya señal'+(f.size>200*1048576?'; por el tamaño puede tardar bastante':'')+'.'); programarSubida(2000); }catch(err){ toast('No se pudo guardar el video: '+err.message); } });
+/* ---------- v1.6: grabador dentro del app (MediaRecorder, 1080p, ~8 Mbps). El selector de archivos de iPhone entrega los videos reducidos
+   (1024×576, ~1,3 Mbps); grabando acá el archivo queda con la calidad de la cámara. Sin MediaRecorder (navegadores viejos) se usa la cámara del sistema. ---------- */
+function grabadorDisponible(){ return !!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder); }
+const REC={ stream:null, rec:null, chunks:[], t0:0, timer:null, wl:null, mime:'' };
+function recMime(){ const c=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']; return c.find(m=>{ try{ return MediaRecorder.isTypeSupported(m); }catch(e){ return false; } })||''; }
+function recTxt(){ const s=Math.floor((Date.now()-REC.t0)/1000); const mb=REC.chunks.reduce((a,b)=>a+b.size,0)/1048576; $('rec-tiempo').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')+(mb?' · '+mb.toFixed(1)+' MB':''); }
+async function abrirGrabador(){ const m=$('rec-modal'); try{ REC.stream=await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30} }, audio:true }); }
+  catch(e){ toast('No se pudo abrir la cámara ('+(e.message||e)+'). Se usa la cámara del sistema.'); const i=$('file-video'); i.setAttribute('capture','environment'); i.click(); return; }
+  const v=$('rec-preview'); v.srcObject=REC.stream; REC.chunks=[]; REC.mime=recMime(); const st=REC.stream.getVideoTracks()[0].getSettings(); $('rec-estado').textContent='Listo · '+(st.width&&st.height?st.width+'×'+st.height:'cámara'); $('rec-tiempo').textContent='00:00';
+  $('rec-start').classList.remove('hidden'); $('rec-stop').classList.add('hidden'); m.classList.remove('hidden'); REC.wl=await pedirWakeLock(); }
+function cerrarGrabador(){ clearInterval(REC.timer); REC.timer=null; try{ if(REC.rec&&REC.rec.state!=='inactive') REC.rec.stop(); }catch(e){} try{ (REC.stream&&REC.stream.getTracks()||[]).forEach(t=>t.stop()); }catch(e){} REC.stream=null; REC.rec=null; $('rec-preview').srcObject=null; $('rec-modal').classList.add('hidden'); soltarWakeLock(REC.wl); REC.wl=null; }
+$('rec-start').addEventListener('click',()=>{ if(!REC.stream) return; try{ const opc={ videoBitsPerSecond:8000000, audioBitsPerSecond:96000 }; if(REC.mime) opc.mimeType=REC.mime; REC.rec=new MediaRecorder(REC.stream,opc); }catch(e){ try{ REC.rec=new MediaRecorder(REC.stream); }catch(e2){ toast('Este teléfono no puede grabar dentro del app: use la cámara del sistema.'); cerrarGrabador(); const i=$('file-video'); i.setAttribute('capture','environment'); i.click(); return; } }
+  REC.chunks=[]; REC.rec.ondataavailable=e=>{ if(e.data&&e.data.size) REC.chunks.push(e.data); }; REC.rec.onstop=guardarGrabacion; REC.rec.start(2000); REC.t0=Date.now(); REC.timer=setInterval(recTxt,500);
+  $('rec-estado').textContent='● Grabando'; $('rec-start').classList.add('hidden'); $('rec-stop').classList.remove('hidden'); });
+$('rec-stop').addEventListener('click',()=>{ if(REC.rec&&REC.rec.state!=='inactive'){ $('rec-estado').textContent='Guardando…'; REC.rec.stop(); } else cerrarGrabador(); });
+$('rec-cancel').addEventListener('click',()=>{ if(REC.rec&&REC.rec.state!=='inactive'){ if(!confirm('¿Descartar la grabación?')) return; REC.rec.onstop=null; } cerrarGrabador(); });
+async function guardarGrabacion(){ const tipo=(REC.rec&&REC.rec.mimeType)||REC.mime||'video/mp4'; const ext=/webm/.test(tipo)?'webm':'mp4'; const blob=new Blob(REC.chunks,{type:tipo.split(';')[0]}); cerrarGrabador(); if(!blob.size){ toast('La grabación quedó vacía.'); return; }
+  const f=new File([blob],'video_'+formId.slice(0,8)+'.'+ext,{type:blob.type}); try{ await videoPut(formId,f); w.video={nombre:f.name, tipo:f.type, tamano:f.size, estado:'local', partes_subidas:0, url:null, id_drive:null}; dirty=true; renderVideo(); toast('Video grabado ('+fmtBytes(f.size)+'): se sube al Drive en segundo plano cuando haya señal.'); programarSubida(2000); }catch(err){ toast('No se pudo guardar el video: '+err.message); } }
+document.addEventListener('visibilitychange',()=>{ if(document.hidden&&REC.rec&&REC.rec.state==='recording'){ try{ REC.rec.stop(); }catch(e){} } });
 $('btn-quitar-video').addEventListener('click',async()=>{ if(!confirm('¿Quitar el video de esta orden?')) return; try{ await videoDel(formId); }catch(e){} w.video=null; dirty=true; renderVideo(); });
 function renderVideo(){ const v=w&&w.video;  $('video-chip').classList.toggle('hidden',!v); const m=$('video-msg'); if(!v){ m.classList.add('hidden'); return; } $('video-nombre').textContent=v.nombre+' · '+fmtBytes(v.tamano); m.classList.remove('hidden'); m.className='msg '+(v.estado==='subido'?'ok':v.estado==='error'?'bad':'');
   m.textContent = v.estado==='subido' ? '✓ Subido al Drive. El PDF lleva el botón para abrirlo.' : v.estado==='subiendo' ? '☁ Subiendo al Drive… parte '+(v.partes_subidas||0)+' de '+Math.ceil(v.tamano/VIDEO_PARTE) : v.estado==='error' ? 'No se pudo subir ('+(v.error||'')+'): se reintenta solo con señal.' : '☁ Se sube al Drive cuando haya señal.'; }
@@ -1424,15 +1487,22 @@ function elegirComisionista(n){ F.comisionista=n; $('f-comisionista').value=n; d
 function applyForm(){ pintarComisionistas();
   fillSelect($('f-destino'), ESTANCIAS.map(e=>({v:e.n, t:e.n+(e.cod?' — cód. '+e.cod:'')})).concat([{v:DESTINO_A_DEFINIR,t:DESTINO_A_DEFINIR}]), 'Seleccionar…');
   Object.keys(FIELDS).forEach(id=>{ const v=getP(F,FIELDS[id]); $(id).value = v==null?'':v; });
-  Object.keys(SEGS).forEach(id=>setSeg($(id), getP(F,SEGS[id])||'')); showDestino();
+  Object.keys(SEGS).forEach(id=>setSeg($(id), getP(F,SEGS[id])||'')); showDestino(); renderDatosGuia();
   renderUbic(); renderKm(); renderFlete(); renderPrecioModo(); renderComModo(); renderPesos(); renderDocs(); renderBancos(); renderVideo(); renderIA(); pintarCambioHint(); }
 function showDestino(){ const e=estancia(F.destino); $('destino-cod').textContent = e ? (e.cod?'Código SENACSA del establecimiento: '+e.cod:'Sin código cargado todavía') + (e.sinCoord?' · sin coordenadas: escriba los km a mano':'') : (F.destino===DESTINO_A_DEFINIR?'Destino a definir: el flete se calcula cuando se elija la estancia.':''); }
+/* v1.6: lo que el vendedor necesita para emitir la guía, la COTA y la factura, listo para copiar o mandar por WhatsApp */
+function textoDatosGuia(F){ const e=estancia(F.destino); if(!e) return ''; return 'Datos para la guía, la COTA y la factura:\n• Comprador / propietario de destino: '+EMPRESA.razon_social+' — RUC '+EMPRESA.ruc+' (código de propietario '+EMPRESA.ruc_base+')\n• Establecimiento de destino: Estancia '+e.n.replace(/ \(.*\)$/,'')+(e.cod?' — código SENACSA '+e.cod:' (código SENACSA: consultar)')+'\n• Factura a nombre de '+EMPRESA.razon_social+', RUC '+EMPRESA.ruc+', con el importe en la columna del IVA 5 %'; }
+function renderDatosGuia(){ const e=estancia(F.destino); const box=$('guia-datos'); if(!e){ box.classList.add('hidden'); return; } box.classList.remove('hidden');
+  const filas=[['Comprador / propietario de destino',EMPRESA.razon_social+' · RUC '+EMPRESA.ruc],['Código de propietario (SENACSA)',EMPRESA.ruc_base],['Establecimiento de destino','Estancia '+e.n.replace(/ \(.*\)$/,'')+(e.cod?' · código '+e.cod:' · código: consultar')],['Factura','A nombre de '+EMPRESA.razon_social+' · columna IVA 5 %']];
+  $('guia-datos-lista').innerHTML=filas.map(([k,v])=>'<span>'+esc(k)+'</span><b>'+esc(v)+'</b>').join(''); }
+$('btn-guia-wa').addEventListener('click',()=>{ window.open('https://wa.me/?text='+encodeURIComponent(textoDatosGuia(F)),'_blank','noopener'); });
+$('btn-guia-copiar').addEventListener('click',async()=>{ const t=textoDatosGuia(F); try{ await navigator.clipboard.writeText(t); toast('Copiado: péguelo en el WhatsApp del vendedor.'); }catch(e){ prompt('Copie el texto:', t); } });
 function renderPrecioModo(){ const kg=F.precio_modo!=='cabeza', rg=kg&&F.kg_modo==='rango'; $('wrap-kg-modo').classList.toggle('hidden',!kg); $('wrap-precio').classList.toggle('hidden',rg); $('wrap-rangos').classList.toggle('hidden',!rg); if(rg) renderRangos(); $('lbl-precio').textContent = kg?'Precio por kg vivo (₲, IVA incluido)':'Precio por cabeza (₲, IVA incluido)'; $('wrap-hoja').classList.toggle('hidden',!kg); $('wrap-peso-est').classList.toggle('hidden',kg); $('pesaje-titulo').textContent = kg?'3 · Hoja de pesaje (kg)':'3 · Peso promedio estimado'; }
 function renderComModo(){ const m=F.com_modo; $('wrap-com-tasa').classList.toggle('hidden', !m || m==='sin'); $('lbl-com-tasa').textContent = m==='pct'?'Porcentaje sobre el total de la compra (%)':'Monto por cabeza (₲, IVA incluido)'; $('f-com-tasa').placeholder = m==='pct'?'Ej.: 2,5':'0'; }
 function pintarCambioHint(){ $('cambio-hint').textContent = cfg.cambio ? 'Cambio del '+fmtDate(cfg.cambio_fecha)+' según '+(cfg.cambio_fuente||'el servidor')+': '+fmt(cfg.cambio,0)+' ₲/US$. Puede corregirlo.' : 'Se completa solo con señal; puede corregirlo.'; }
 /* DOM -> F */
 Object.keys(FIELDS).forEach(id=>{ const el=$(id); const h=()=>{ setP(F, FIELDS[id], el.value); dirty=true;
-  if(id==='f-destino'){ showDestino(); if(F.km_fuente==='ruta'){ F.km=''; F.km_fuente=''; F.km_detalle=''; F.ruta=null; $('f-km').value=''; } renderKm(); renderFlete(); if(navigator.onLine && F.ubicacion) calcKm(false); iaInvalidar(); }
+  if(id==='f-destino'){ showDestino(); renderDatosGuia(); if(F.km_fuente==='ruta'){ F.km=''; F.km_fuente=''; F.km_detalle=''; F.ruta=null; $('f-km').value=''; } renderKm(); renderFlete(); if(navigator.onLine && F.ubicacion) calcKm(false); iaInvalidar(); }
   if(id==='f-km'){ F.km_fuente = el.value?'manual':''; if(F.km_fuente==='manual' && !/no era coherente/.test(F.km_detalle||'')) F.km_detalle=''; renderKm(); renderFlete(); }
   if(id==='f-flete-precio'){ F.flete.auto=false; }
   if(['f-precio','f-cambio','f-com-tasa','f-cantidad','f-peso-est','f-flete-precio','f-flete-viajes','f-cab-camion'].includes(id)){ renderTotales(); if(id==='f-precio') renderPesos(); if(id==='f-precio'||id==='f-cantidad') iaInvalidar(); }
@@ -1646,9 +1716,27 @@ async function makePdf(r, x){
     const filaF=(vals,hdr)=>{ const rowH=15; need(rowH); let xx=M; vals.forEach((v,i)=>{ page.drawRectangle({x:xx,y:y-rowH+4,width:cw[i],height:rowH,borderColor:line,borderWidth:.5,color:hdr?brand:undefined}); let t2=ansi(v); const sz=hdr?7.5:8.6, fnt=hdr||i>=2?bold:font; while(fnt.widthOfTextAtSize(t2,sz)>cw[i]-6&&t2.length>3) t2=t2.slice(0,-2); page.drawText(t2,{x:i>=2&&!hdr?xx+cw[i]-4-fnt.widthOfTextAtSize(t2,sz):xx+3,y:y-rowH+8,size:sz,font:fnt,color:hdr?rgb(1,1,1):ink}); xx+=cw[i]; }); y-=rowH; };
     filaF(head,true); const lin=fx.fa.lineas&&fx.fa.lineas.length>1?fx.fa.lineas:null; if(lin){ lin.forEach(l=>filaF([String(l.cantidad), l.descripcion, gs(l.unitario), '5 %', gs(l.total), ''])); filaF(['', 'Total animales', '', '5 %', gs(fx.fa.total), gs(fx.fa.iva5)]); } else filaF([String(fx.fa.cantidad), fx.fa.descripcion, gs(fx.fa.unitario), '5 %', gs(fx.fa.total), gs(fx.fa.iva5)]);
     if(fx.fc) filaF([String(fx.fc.cantidad), fx.fc.descripcion, gs(fx.fc.unitario), '10 %', gs(fx.fc.total), gs(fx.fc.iva10)]);
+    /* v1.6: esquema de factura modelo con los valores en su casilla */
+    const modelo=(o)=>{ const lin=o.lineas.slice(0,3); const rows=Math.max(lin.length,1); const rowH=13, bw=W-M*2, hdrH=60, bh=hdrH+10+rowH*(rows+2)+40; need(bh+22,'LIQUIDACIÓN (cont.)');
+      page.drawText(ansi(o.titulo),{x:M,y:y-2,size:8,font:bold,color:grey}); y-=12; const top=y; const x0=M; const c=[34,bw-34-78-52-82-82,78,52,82,82]; const cx=[]; let acc=x0; c.forEach(wd=>{ cx.push(acc); acc+=wd; }); cx.push(acc);
+      page.drawRectangle({x:x0,y:top-bh,width:bw,height:bh,borderColor:grey,borderWidth:.8});
+      page.drawText('RAZON SOCIAL DEL VENDEDOR  ·  RUC  ·  DIRECCION',{x:x0+8,y:top-13,size:6.5,font,color:grey}); page.drawLine({start:{x:x0+8,y:top-22},end:{x:x0+200,y:top-22},thickness:.4,color:line});
+      page.drawRectangle({x:x0+bw-150,y:top-34,width:142,height:28,borderColor:grey,borderWidth:.5}); page.drawText('FACTURA',{x:x0+bw-150+46,y:top-16,size:9,font:bold,color:ink}); page.drawText('Timbrado N° ______  ·  N° 001-001-______',{x:x0+bw-146,y:top-29,size:6,font,color:grey});
+      page.drawText('Fecha: __/__/____     Condicion de venta:  [X] Contado   [ ] Credito',{x:x0+8,y:top-45,size:7,font,color:ink});
+      page.drawRectangle({x:x0+4,y:top-hdrH-2,width:bw-8,height:12,color:soft}); page.drawText(ansi('Nombre o razon social: '+EMPRESA.razon_social+'   ·   RUC: '+EMPRESA.ruc),{x:x0+8,y:top-hdrH+1,size:7.2,font:bold,color:brand});
+      let yy=top-hdrH-10; const heads=['Cant.','Descripcion','Precio unit.','Exentas','5 %','10 %']; page.drawRectangle({x:x0,y:yy-rowH,width:bw,height:rowH,color:brand}); heads.forEach((h,i)=>{ const tw=bold.widthOfTextAtSize(h,6.8); page.drawText(h,{x:i>=2?cx[i+1]-4-tw:cx[i]+4,y:yy-rowH+4,size:6.8,font:bold,color:rgb(1,1,1)}); }); yy-=rowH;
+      const put=(i,txt,b,hl)=>{ const fnt=b?bold:font; let t2=ansi(txt); while(fnt.widthOfTextAtSize(t2,7.2)>c[i]-6&&t2.length>3) t2=t2.slice(0,-2); if(hl) page.drawRectangle({x:cx[i],y:yy-rowH,width:c[i],height:rowH,color:soft}); page.drawText(t2,{x:i>=2?cx[i+1]-4-fnt.widthOfTextAtSize(t2,7.2):cx[i]+4,y:yy-rowH+4,size:7.2,font:fnt,color:hl?brand:ink}); };
+      for(let r=0;r<rows;r++){ const l=lin[r]; if(l){ put(0,String(l.cantidad),true); put(1,l.descripcion); put(2,fmt(l.unitario)); put(3,'-'); put(4,o.iva===5?fmt(l.total):'-',o.iva===5,o.iva===5); put(5,o.iva===10?fmt(l.total):'-',o.iva===10,o.iva===10); } page.drawLine({start:{x:x0,y:yy-rowH},end:{x:x0+bw,y:yy-rowH},thickness:.4,color:line}); yy-=rowH; }
+      page.drawRectangle({x:x0,y:yy-rowH,width:bw,height:rowH,color:rgb(.96,.95,.92)}); put(1,'SUBTOTAL',true); put(3,'0'); put(4,o.iva===5?fmt(o.total):'0',true,o.iva===5); put(5,o.iva===10?fmt(o.total):'0',true,o.iva===10); yy-=rowH;
+      cx.slice(1,-1).forEach(x=>page.drawLine({start:{x,y:top-hdrH-10},end:{x,y:yy},thickness:.4,color:line})); page.drawLine({start:{x:x0,y:yy},end:{x:x0+bw,y:yy},thickness:.6,color:grey});
+      page.drawText('TOTAL A PAGAR (en letras): ______________________________',{x:x0+8,y:yy-13,size:7,font,color:ink}); const tt=fmt(o.total); page.drawRectangle({x:x0+bw-110,y:yy-17,width:104,height:13,color:soft}); page.drawText(tt,{x:x0+bw-10-bold.widthOfTextAtSize(tt,8),y:yy-14,size:8,font:bold,color:brand});
+      const liq='LIQUIDACION DEL IVA:   (5 %) '+(o.iva===5?fmt(o.ivaMonto):'0')+'      (10 %) '+(o.iva===10?fmt(o.ivaMonto):'0')+'      TOTAL IVA: '+fmt(o.ivaMonto); page.drawText(ansi(liq),{x:x0+8,y:yy-29,size:7,font:bold,color:brand});
+      y=top-bh-10; };
+    modelo({ titulo:'Modelo: así queda la factura de los animales (el importe en la columna del 5 %; liquidación del IVA = total ÷ 21)', lineas:fx.fa.lineas, iva:5, total:fx.fa.total, ivaMonto:fx.fa.iva5 });
+    if(fx.fc) modelo({ titulo:'Modelo: así queda la factura de la comisión (aparte, en la columna del 10 %; liquidación del IVA = total ÷ 11)', lineas:[{cantidad:fx.fc.cantidad, descripcion:fx.fc.descripcion, unitario:fx.fc.unitario, total:fx.fc.total}], iva:10, total:fx.fc.total, ivaMonto:fx.fc.iva10 });
     const nota=wrap('El precio ya incluye el IVA. Precio unitario por cabeza'+(r.precio_modo==='kg'?' (convertido de Gs/kg vivo y redondeado a miles)':'')+'; en la columna del IVA va el valor a facturar y, abajo, en la liquidación del IVA, el valor a facturar dividido por 21 (animales) o por 11 (comisión).',7.6,font,W-M*2); need(nota.length*9+4); nota.forEach((l,i)=>page.drawText(l,{x:M,y:y-3-i*9,size:7.6,font,color:grey})); y-=nota.length*9+8; }
   if(r.observaciones){ const ln=wrap(r.observaciones,9,font,W-M*2-120); need(ln.length*12+6); page.drawText('Observaciones',{x:M,y,size:8.2,font,color:grey}); ln.forEach((l,i)=>page.drawText(l,{x:M+120,y:y-i*12,size:9,font,color:ink})); y-=ln.length*12+8; }
-  if(r.pesos.length&&r.precio&&r.precio_modo==='kg'){ title('Detalle por animal (peso y valor)'); const cols=4, cw=(W-M*2)/cols, rowH=11, per=Math.ceil(r.pesos.length/cols); for(let rr=0;rr<per;rr++){ need(rowH,'DATOS OPERATIVOS (cont.)'); for(let ci=0;ci<cols;ci++){ const idx=ci*per+rr; if(idx>=r.pesos.length) continue; const x0=M+ci*cw; page.drawText(String(idx+1).padStart(3,' '),{x:x0,y,size:8,font,color:grey}); page.drawText(fmt(r.pesos[idx],1)+' kg',{x:x0+18,y,size:8,font,color:ink}); const pr=r.kg_modo==='rango'?((r.rangos||[]).find(g=>r.pesos[idx]>=g.desde&&(g.hasta==null||r.pesos[idx]<=g.hasta))||{}).precio||0:r.precio; const v=pr?ansi(gs(r.pesos[idx]*pr)):'fuera de rango'; page.drawText(v,{x:x0+cw-10-bold.widthOfTextAtSize(v,8),y,size:8,font:bold,color:ink}); } y-=rowH; } y-=6; }
+  /* v1.6: sin 'Detalle por animal (peso y valor)': la hoja de pesaje de la página 1 ya lleva los pesos y no hace falta el valor por animal */
   need(44); y-=22; const sw=(W-M*2-30)/2; [['Comisionista ('+(r.comisionista||'')+')',M],['Recibido por (Ypoti)',M+sw+30]].forEach(([lab,sx])=>{ page.drawLine({start:{x:sx,y},end:{x:sx+sw,y},thickness:.7,color:ink}); page.drawText(ansi(lab),{x:sx+(sw-font.widthOfTextAtSize(ansi(lab),8.5))/2,y:y-11,size:8.5,font,color:ink}); }); y-=20;
   /* ===== PÁGINA 2: documentación y pago ===== */
   header('DOCUMENTACIÓN Y PAGO'); kvRight=0;

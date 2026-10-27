@@ -1,8 +1,14 @@
-# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 1.5.5
+# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 1.6
 
 App para que los comisionistas y el director de originación registren cada compra de ganado desde el corral: datos del lote, pesaje animal por animal, foto de los animales carimbados, video opcional, ubicación del corral, distancia por ruta y transportadora sugerida, precio, comisión y liquidación (IVA 5 % y 10 %, dólares, puesto en estancia); en la segunda página la guía, la factura y los datos bancarios, con una verificación automática por IA. Al completar todo, la orden se envía a pago: los administradores reciben un correo con el PDF y un enlace donde autorizan (contado con urgencia o plazo), y el sistema agrega la fila en **COMPRAS DE DESMAMANTES 9**, avisa a Laura para Asana y crea la tarea en Asana.
 
 Está construido sobre el app **Registro de manejo** (misma base: PWA que se agrega a la pantalla de inicio, funciona sin señal, guarda solo cada 2 segundos en el teléfono y copia a la nube cuando hay señal, PIN de 6 números verificado por el servidor, PDF generado en el teléfono con pdf-lib, mapa OpenStreetMap, servidor en Google Apps Script con planilla + Drive + correo).
+
+## Novedades 1.6
+- **Video en alta calidad grabado dentro del app**: «Grabar video» abre la cámara en el app (1080p, ~8 Mbps) y guarda el archivo tal cual. Motivo: el selector de videos de iPhone/Safari entrega los videos reducidos a 1024×576 y ~1,3 Mbps (verificado en un video real); ni el app ni el servidor reducen nada, el archivo sube a Drive byte por byte. El video sigue subiendo en segundo plano por partes de 3 MB cuando hay señal. Si el teléfono no permite grabar en el app, se abre la cámara del sistema como antes.
+- **Datos para la guía, la COTA y la factura**: al elegir la estancia de destino aparece una tarjeta con el comprador (RURAL BIOENERGIA S.A., RUC 80050418-6, código de propietario 80050418), el establecimiento de destino con su código SENACSA y cómo debe salir la factura, con botones **Copiar** y **WhatsApp al vendedor**.
+- **Modelo de factura**: debajo de «Cómo facturar» (y en el PDF) se dibuja una factura modelo, sin datos del vendedor, con los importes en la casilla correcta (columna 5 % para los animales, 10 % para la comisión, liquidación del IVA).
+- **Hoja de pesaje**: muestra solo el peso de cada animal, sin el valor en guaraníes; el PDF ya no lleva la sección «Detalle por animal (peso y valor)».
 
 ## Novedades 1.5.5
 - **Precios cargados "en miles"**: si el precio por kg queda en 23 (en lugar de 23.000), por cabeza en 5.200, el flete en 2.300 o la comisión en 50, el app pregunta al salir del campo si quiso decir el valor ×1000 y lo corrige. Si se deja un precio fuera de lo habitual (kg: 5.000–80.000 ₲; cabeza: 300.000–30.000.000 ₲; flete: 200.000–30.000.000 ₲ por viaje), la orden queda como borrador con el aviso «cárguelo completo, en guaraníes» hasta corregirlo. Motivo: una orden real cargada a 23 ₲/kg (total 316.894 ₲ en lugar de 316.894.000).
