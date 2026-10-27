@@ -941,7 +941,7 @@ const LOGO_PDF_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAaIAAAB4CAYAAACw2faSAACLZklEQVR42u
    Construido sobre el app "Registro de manejo" (misma base: PWA sin conexión, IndexedDB + autoguardado,
    copia en la nube, contraseñas de 4 números verificadas por el servidor, PDF con pdf-lib, mapa OSM).
    ===================================================================================================== */
-const APP_VERSION = '1.5.4';
+const APP_VERSION = '1.5.5';
 const ESQUEMA = 'compras-ypoti/1';
 const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzpJMDSnuFe7jQjVYM7pqa-Q1Jnydm21VRosUvgcLKhAv8DFrDMRrV5ih-A9sLAhXX0Tg/exec'; // URL /exec del servidor (Apps Script) · ver README
 const EMPRESA = { razon_social:'RURAL BIOENERGIA S.A.', ruc:'80050418-6', ruc_base:'80050418' };
@@ -1035,6 +1035,11 @@ window.addEventListener('online',()=>{ updateNet(); syncPendientes(); }); window
 /* ---------- servidor ---------- */
 async function post(body, opc){ opc=opc||{}; if(!cfg.endpoint||/PEGAR_AQUI/.test(cfg.endpoint)) throw new Error('Falta configurar la URL del servidor.'); const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(), opc.timeout||45000);
   try{ if(sesion && !body.clave){ body.usuario=sesion.nombre; body.clave=sesion.clave; } const res=await fetch(cfg.endpoint,{method:'POST', body:JSON.stringify(body), redirect:'follow', signal:ctrl.signal}); const txt=await res.text(); let j={}; try{ j=JSON.parse(txt); }catch(e){ throw new Error('Respuesta inválida del servidor'); } if(j.srv) recordarServidor(j.srv); if(!res.ok||j.ok===false){ if(j.codigo==='sesion' && sesion && body.tipo!=='login'){ setTimeout(()=>{ if(sesion){ toast(j.error||'Vuelva a ingresar con su PIN.'); cerrarSesion(); } },0); } throw Object.assign(new Error(j.error||('HTTP '+res.status)),{servidor:true, codigo:j.codigo||null}); } return j; } finally{ clearTimeout(to); } }
+/* v1.5.5: precios cargados "en miles" (23 en lugar de 23.000 ₲/kg; 5.200 en lugar de 5.200.000 ₲/cabeza). Bandas de lo habitual en ₲. */
+const BANDAS_PRECIO = { kg:{min:5000, max:80000, txt:'₲ por kg vivo', ej:'23000'}, cabeza:{min:300000, max:30000000, txt:'₲ por cabeza', ej:'5200000'}, flete:{min:200000, max:30000000, txt:'₲ por viaje', ej:'2300000'}, comision_cab:{min:5000, max:500000, txt:'₲ por cabeza de comisión', ej:'30000'} };
+function precioFueraDeBanda(tipo, v){ const b=BANDAS_PRECIO[tipo]; v=num(v); if(!b||!(v>0)) return null; if(v<b.min) return {lado:'bajo', b, v}; if(v>b.max) return {lado:'alto', b, v}; return null; }
+/* al salir del campo: si el valor parece cargado en miles (×1000 cae dentro de la banda), se ofrece corregirlo */
+function corregirEnMiles(tipo, v){ const f=precioFueraDeBanda(tipo, v); if(!f||f.lado!=='bajo') return null; const x=f.v*1000; if(x>=f.b.min && x<=f.b.max && window.confirm('¿'+fmt(f.v)+' '+f.b.txt+'? Parece cargado en miles. ¿Quiso decir '+fmt(x)+' ₲? (el precio se carga completo, en guaraníes: ej. '+f.b.ej+')')) return x; return null; }
 /* v1.5.4: versión del servidor (viene en cada respuesta desde servidor 1.5.4); sirve para no mandar datos duplicados a un servidor nuevo */
 function recordarServidor(v){ try{ if(v&&v!==localStorage.getItem('srv_version')) localStorage.setItem('srv_version',String(v)); }catch(e){} }
 function servidorDesde(min){ let v=''; try{ v=localStorage.getItem('srv_version')||''; }catch(e){} if(!v) return false; const a=String(v).split('.').map(Number), b=String(min).split('.').map(Number); for(let i=0;i<Math.max(a.length,b.length);i++){ const x=a[i]||0, y=b[i]||0; if(x!==y) return x>y; } return true; }
@@ -1118,7 +1123,7 @@ function resumenRangos(f){ const rs=rangosValidos(f).map(r=>Object.assign(r,{cab
 const txtRango = r => fmt(r.desde,1).replace(/,0$/,'')+' a '+(r.hasta===Infinity?'más':fmt(r.hasta,1).replace(/,0$/,''))+' kg';
 function renderRangos(){ const box=$('rangos-list'); box.innerHTML='';
   F.rangos.forEach((r,i)=>{ const d=document.createElement('div'); d.className='rango'; d.innerHTML='<label class="f"><span>Desde (kg)</span><input type="number" inputmode="decimal" step="any" data-k="desde"></label><label class="f"><span>Hasta (kg)</span><input type="number" inputmode="decimal" step="any" data-k="hasta" placeholder="sin límite"></label><label class="f"><span>₲ por kg</span><input type="number" inputmode="numeric" data-k="precio"></label>'+(F.rangos.length>1?'<button class="btn small danger" type="button" aria-label="Quitar rango">✕</button>':'<span></span>');
-    d.querySelectorAll('input').forEach(inp=>{ inp.value=r[inp.dataset.k]||''; inp.addEventListener('input',()=>{ r[inp.dataset.k]=inp.value; dirty=true; renderResumenRangos(); renderPesosValores(); renderTotales(); iaInvalidar(); }); });
+    d.querySelectorAll('input').forEach(inp=>{ inp.value=r[inp.dataset.k]||''; inp.addEventListener('input',()=>{ r[inp.dataset.k]=inp.value; dirty=true; renderResumenRangos(); renderPesosValores(); renderTotales(); iaInvalidar(); }); if(inp.dataset.k==='precio') inp.addEventListener('change',()=>{ const x=corregirEnMiles('kg', inp.value); if(x!=null){ inp.value=String(x); r.precio=String(x); dirty=true; renderResumenRangos(); renderPesosValores(); renderTotales(); iaInvalidar(); } }); });
     const del=d.querySelector('button'); if(del) del.addEventListener('click',()=>{ F.rangos.splice(i,1); dirty=true; renderRangos(); renderPesos(); });
     box.appendChild(d); }); renderResumenRangos(); }
 function renderResumenRangos(){ const el=$('rangos-resumen'); if(!esRango(F)){ el.innerHTML=''; return; } const R=resumenRangos(F); if(!F.pesos.length){ el.innerHTML='<div class="hint">Al cargar la hoja de pesaje se ve cuántos animales caen en cada rango.</div>'; return; }
@@ -1432,7 +1437,10 @@ Object.keys(FIELDS).forEach(id=>{ const el=$(id); const h=()=>{ setP(F, FIELDS[i
   if(id==='f-flete-precio'){ F.flete.auto=false; }
   if(['f-precio','f-cambio','f-com-tasa','f-cantidad','f-peso-est','f-flete-precio','f-flete-viajes','f-cab-camion'].includes(id)){ renderTotales(); if(id==='f-precio') renderPesos(); if(id==='f-precio'||id==='f-cantidad') iaInvalidar(); }
   if(id==='f-proveedor'||id==='f-fecha') iaInvalidar(); };
-  el.addEventListener('input',h); el.addEventListener('change',h); });
+  el.addEventListener('input',h); el.addEventListener('change',h);
+  /* v1.5.5: al salir del campo, precios que parecen cargados en miles */
+  const tipoDe={ 'f-precio':()=>F.precio_modo==='kg'?'kg':'cabeza', 'f-flete-precio':()=>'flete', 'f-com-tasa':()=>F.com_modo==='cab'?'comision_cab':null }[id];
+  if(tipoDe) el.addEventListener('change',()=>{ const t=tipoDe(); if(!t) return; const x=corregirEnMiles(t, el.value); if(x!=null){ el.value=String(x); h(); } }); });
 $('f-comisionista').addEventListener('input',()=>{ if($('f-comisionista').readOnly) return; F.comisionista=$('f-comisionista').value.trim(); dirty=true; sugerirComisionistas(); });
 $('f-comisionista').addEventListener('focus',()=>{ if(!$('f-comisionista').readOnly){ sugerirComisionistas(); if(esAdmin() && navigator.onLine && !(usuarios.intermediarios||[]).length) cargarIntermediarios(true).then(sugerirComisionistas); } });
 $('f-comisionista').addEventListener('blur',()=>setTimeout(()=>$('com-sug').classList.add('hidden'),150));
@@ -1445,10 +1453,12 @@ function faltantesDe(f){ f=migrarForm(f); const out=[]; const add=(p,campo,titul
   if(!f.ubicacion) add(1,'ubicacion','Ubicación del corral (GPS o mapa)'); if(!(f.carimbo||'').trim()) add(1,'carimbo','Carimbo'); if(!f.sola_marca) add(1,'sola_marca','¿Sola marca?'); if(!f.raza) add(1,'raza','Raza');
   if(f.precio_modo==='kg' && f.kg_modo==='rango'){ const rv=rangosValidos(f); if(!rv.length) add(1,'rangos','Rangos de peso con su precio'); else { if((f.rangos||[]).some(r=>(r.desde!==''||r.hasta!=='') && !(num(r.precio)>0))) add(1,'rangos','Precio de cada rango de peso'); if(c.rangos && c.rangos.fuera) add(1,'rangos',c.rangos.fuera+(c.rangos.fuera===1?' animal pesado queda':' animales pesados quedan')+' fuera de los rangos de peso'); } }
   else if(!(num(f.precio)>0)) add(1,'precio', f.precio_modo==='kg'?'Precio por kg vivo':'Precio por cabeza');
+  else { const fb=precioFueraDeBanda(f.precio_modo==='kg'?'kg':'cabeza', f.precio); if(fb) add(1,'precio', (f.precio_modo==='kg'?'Precio por kg vivo':'Precio por cabeza')+' fuera de lo habitual ('+fmt(fb.v)+' ₲): cárguelo completo, en guaraníes (ej. '+fb.b.ej+')'); }
+  if(f.precio_modo==='kg' && f.kg_modo==='rango'){ const rb=(f.rangos||[]).map(r=>precioFueraDeBanda('kg', r.precio)).filter(Boolean); if(rb.length) add(1,'rangos','Precio de un rango fuera de lo habitual ('+fmt(rb[0].v)+' ₲/kg): cárguelo completo, en guaraníes'); }
   if(f.precio_modo==='kg'){ if(!c.pesados) add(1,'pesos','Hoja de pesaje'); else if(c.cab && c.pesados<c.cab) add(1,'pesos','Hoja de pesaje: faltan '+(c.cab-c.pesados)+' pesadas ('+c.pesados+' de '+c.cab+')'); else if(c.cab && c.pesados>c.cab) add(1,'pesos','Hoja de pesaje: hay '+c.pesados+' pesadas para '+c.cab+' animales'); }
   else if(!(num(f.peso_est)>0)) add(1,'peso_est','Peso promedio estimado');
   if(!f._tiene_video) add(1,'video','Video del lote carimbado');
-  if(!f.destino) add(1,'destino','Estancia de destino'); else if(f.destino!==DESTINO_A_DEFINIR){ if(!(num(f.km)>0)) add(1,'km','Distancia por ruta (km)'); if(!f.flete.prov) add(1,'flete','Transportadora'); else { if(f.flete.prov==='Otro' && !(f.flete.otro||'').trim()) add(1,'flete_otro','Nombre de la transportadora'); if(!(num(f.flete.precio)>0)) add(1,'flete_precio','Precio por viaje del flete'); if(!(num(f.flete.cab_camion)>0)) add(1,'cab_camion','Cabezas por camión'); if(!(num(f.flete.viajes)>0)) add(1,'flete_viajes','Cantidad de viajes'); } }
+  if(!f.destino) add(1,'destino','Estancia de destino'); else if(f.destino!==DESTINO_A_DEFINIR){ if(!(num(f.km)>0)) add(1,'km','Distancia por ruta (km)'); if(!f.flete.prov) add(1,'flete','Transportadora'); else { if(f.flete.prov==='Otro' && !(f.flete.otro||'').trim()) add(1,'flete_otro','Nombre de la transportadora'); if(!(num(f.flete.precio)>0)) add(1,'flete_precio','Precio por viaje del flete'); else { const fb=precioFueraDeBanda('flete', f.flete.precio); if(fb) add(1,'flete_precio','Precio del flete fuera de lo habitual ('+fmt(fb.v)+' ₲ por viaje): cárguelo completo, en guaraníes'); } if(!(num(f.flete.cab_camion)>0)) add(1,'cab_camion','Cabezas por camión'); if(!(num(f.flete.viajes)>0)) add(1,'flete_viajes','Cantidad de viajes'); } }
   if(!f.com_modo) add(1,'com_modo','Forma de la comisión'); else if(f.com_modo!=='sin' && !(num(f.com_tasa)>0)) add(1,'com_tasa','Monto de la comisión');
   if(!(num(f.cambio)>0)) add(1,'cambio','Cambio del día (₲ por US$)');
   const d=f.docs; if(!d.facturas.length) add(2,'facturas','Foto de la factura'); if(!d.guias.length) add(2,'guias','Foto de la guía de traslado'); if(!d.cotas.length) add(2,'cotas','Foto de la COTA'); else if(d.cotas.length<d.guias.length) add(2,'cotas','Foto de la COTA de cada guía ('+d.cotas.length+' COTAs para '+d.guias.length+' guías)');
