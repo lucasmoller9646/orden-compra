@@ -1,8 +1,14 @@
-# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 1.5
+# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 1.5.4
 
 App para que los comisionistas y el director de originación registren cada compra de ganado desde el corral: datos del lote, pesaje animal por animal, foto de los animales carimbados, video opcional, ubicación del corral, distancia por ruta y transportadora sugerida, precio, comisión y liquidación (IVA 5 % y 10 %, dólares, puesto en estancia); en la segunda página la guía, la factura y los datos bancarios, con una verificación automática por IA. Al completar todo, la orden se envía a pago: los administradores reciben un correo con el PDF y un enlace donde autorizan (contado con urgencia o plazo), y el sistema agrega la fila en **COMPRAS DE DESMAMANTES 9**, avisa a Laura para Asana y crea la tarea en Asana.
 
 Está construido sobre el app **Registro de manejo** (misma base: PWA que se agrega a la pantalla de inicio, funciona sin señal, guarda solo cada 2 segundos en el teléfono y copia a la nube cuando hay señal, PIN de 6 números verificado por el servidor, PDF generado en el teléfono con pdf-lib, mapa OpenStreetMap, servidor en Google Apps Script con planilla + Drive + correo).
+
+## Novedades 1.5.4 (requiere actualizar el servidor)
+- **Corrección del servidor**: desde el servidor 1.5, «Enviar a pago» fallaba con `foto is not defined` después de subir el PDF (una definición había quedado dentro de un comentario). Ninguna orden podía enviarse a pago. Corregido: hay que pegar `servidor_compras.gs` de nuevo y publicar una nueva versión.
+- **Envío robusto**: si la conexión se corta mientras se envía (Safari en iPhone/iPad corta al apagar la pantalla, cambiar de app o tras ~60 s sin respuesta), el app consulta al servidor si el envío quedó registrado; si quedó, lo toma como enviado sin mandar un segundo correo; si no, reintenta hasta 3 veces. La pantalla se mantiene encendida mientras sube.
+- **Pedido más liviano**: con el servidor 1.5.4 las fotos ya no van duplicadas en el envío (el servidor las toma de la copia completa de la orden). Cada respuesta del servidor trae su versión (`srv`).
+- En el correo y en el PDF, «Justificación» pasa a llamarse «Comentario al enviar». En la base, `app_version` se guarda como texto (antes la planilla lo convertía en fecha).
 
 ## Novedades 1.5.1
 

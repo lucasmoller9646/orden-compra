@@ -941,7 +941,7 @@ const LOGO_PDF_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAaIAAAB4CAYAAACw2faSAACLZklEQVR42u
    Construido sobre el app "Registro de manejo" (misma base: PWA sin conexión, IndexedDB + autoguardado,
    copia en la nube, contraseñas de 4 números verificadas por el servidor, PDF con pdf-lib, mapa OSM).
    ===================================================================================================== */
-const APP_VERSION = '1.5.3';
+const APP_VERSION = '1.5.4';
 const ESQUEMA = 'compras-ypoti/1';
 const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzpJMDSnuFe7jQjVYM7pqa-Q1Jnydm21VRosUvgcLKhAv8DFrDMRrV5ih-A9sLAhXX0Tg/exec'; // URL /exec del servidor (Apps Script) · ver README
 const EMPRESA = { razon_social:'RURAL BIOENERGIA S.A.', ruc:'80050418-6', ruc_base:'80050418' };
@@ -1034,7 +1034,10 @@ window.addEventListener('online',()=>{ updateNet(); syncPendientes(); }); window
 
 /* ---------- servidor ---------- */
 async function post(body, opc){ opc=opc||{}; if(!cfg.endpoint||/PEGAR_AQUI/.test(cfg.endpoint)) throw new Error('Falta configurar la URL del servidor.'); const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(), opc.timeout||45000);
-  try{ if(sesion && !body.clave){ body.usuario=sesion.nombre; body.clave=sesion.clave; } const res=await fetch(cfg.endpoint,{method:'POST', body:JSON.stringify(body), redirect:'follow', signal:ctrl.signal}); const txt=await res.text(); let j={}; try{ j=JSON.parse(txt); }catch(e){ throw new Error('Respuesta inválida del servidor'); } if(!res.ok||j.ok===false){ if(j.codigo==='sesion' && sesion && body.tipo!=='login'){ setTimeout(()=>{ if(sesion){ toast(j.error||'Vuelva a ingresar con su PIN.'); cerrarSesion(); } },0); } throw Object.assign(new Error(j.error||('HTTP '+res.status)),{servidor:true, codigo:j.codigo||null}); } return j; } finally{ clearTimeout(to); } }
+  try{ if(sesion && !body.clave){ body.usuario=sesion.nombre; body.clave=sesion.clave; } const res=await fetch(cfg.endpoint,{method:'POST', body:JSON.stringify(body), redirect:'follow', signal:ctrl.signal}); const txt=await res.text(); let j={}; try{ j=JSON.parse(txt); }catch(e){ throw new Error('Respuesta inválida del servidor'); } if(j.srv) recordarServidor(j.srv); if(!res.ok||j.ok===false){ if(j.codigo==='sesion' && sesion && body.tipo!=='login'){ setTimeout(()=>{ if(sesion){ toast(j.error||'Vuelva a ingresar con su PIN.'); cerrarSesion(); } },0); } throw Object.assign(new Error(j.error||('HTTP '+res.status)),{servidor:true, codigo:j.codigo||null}); } return j; } finally{ clearTimeout(to); } }
+/* v1.5.4: versión del servidor (viene en cada respuesta desde servidor 1.5.4); sirve para no mandar datos duplicados a un servidor nuevo */
+function recordarServidor(v){ try{ if(v&&v!==localStorage.getItem('srv_version')) localStorage.setItem('srv_version',String(v)); }catch(e){} }
+function servidorDesde(min){ let v=''; try{ v=localStorage.getItem('srv_version')||''; }catch(e){} if(!v) return false; const a=String(v).split('.').map(Number), b=String(min).split('.').map(Number); for(let i=0;i<Math.max(a.length,b.length);i++){ const x=a[i]||0, y=b[i]||0; if(x!==y) return x>y; } return true; }
 const esErrorClave = e => /clave|contrase|sesi[oó]n/i.test(String(e&&e.message||e));
 
 /* ---------- teclado numérico (PIN de 6 números) ---------- */
@@ -1711,11 +1714,33 @@ async function enviarPagoCore(x){ const msg=$('done-msg'); const r=buildRecord(x
   if(iaEst!=='ok'){ if(iaEst==='pendiente'||iaEst==='error_servicio'||iaEst==='verificando'){ msg.className='msg'; msg.classList.remove('hidden'); msg.textContent='Verificando la guía y la factura con la IA antes de enviar…'; const okIA=await verificarIA(x.id,true); const x2=await dbGet(x.id); if(x2){ x=x2; doneW=x2; renderDoneStatus(x2); } const e2=(x.ia&&x.ia.estado)||'pendiente'; /* la IA es una alerta, no un impedimento: si no se pudo verificar, se puede enviar igual */ }
     const e3=(x.ia&&x.ia.estado)||'pendiente'; if(e3!=='ok'){ const malos=((x.ia&&x.ia.resultado&&x.ia.resultado.checks)||[]).filter(c=>c.estado!=='ok').map(c=>c.titulo); const txt = (e3==='errores'||e3==='advertencias' ? 'La IA marcó '+malos.length+(malos.length===1?' observación':' observaciones')+(malos.length?': '+malos.slice(0,4).join('; ')+(malos.length>4?'…':''):'')+'. No impide el envío, pero puede atrasar el pago: si puede, verifíquelo antes (✎ Editar).' : 'La IA todavía no verificó esta orden (sin señal o servicio no disponible). Se puede enviar igual; se revisa después.'); justificacion=await pedirJustificacion(txt); if(justificacion===null){ msg.classList.add('hidden'); return; } } }
   msg.className='msg'; msg.classList.remove('hidden'); msg.textContent='Generando el PDF y enviando a los administradores…'; $('btn-enviar-pago').disabled=true;
-  try{ const files=await buildFiles(x); const payload={ tipo:'enviar_pago', id:x.id, registro:files.r, justificacion_ia:justificacion||null, nombre_pdf:files.pdfFile.name, pdf_base64:b64(files.pdfBytes), fotos:{ facturas:formDe(x).docs.facturas.map(d=>d.foto), guias:formDe(x).docs.guias.map(d=>d.foto), cotas:formDe(x).docs.cotas.map(d=>d.foto) }, wrapper:paraNube(x) };
-    const j=await post(payload,{timeout:180000}); await enCola(async()=>{ const x2=await dbGet(x.id); if(!x2) return; x2.pago=Object.assign({},x2.pago||{},{enviado_en:new Date().toISOString(), enviado_por:sesion.nombre, token:j.token||(x2.pago&&x2.pago.token)||null, decision:null, justificacion_ia:justificacion||null}); x2.version=(x2.version||1); logEntry(x2,'enviada a pago','correo a '+(j.destinatarios||'administradores')); x2.nube=Object.assign({},x2.nube||{},{pendiente:true}); await dbPut(x2); doneW=x2; });
+  const wl=await pedirWakeLock(); /* v1.5.4: la pantalla no se apaga mientras sube (iOS corta la conexión si se apaga o se cambia de app) */
+  try{ const files=await buildFiles(x); const f=formDe(x);
+    const payload={ tipo:'enviar_pago', id:x.id, registro:files.r, justificacion_ia:justificacion||null, nombre_pdf:files.pdfFile.name, pdf_base64:b64(files.pdfBytes), wrapper:paraNube(x), fotos_en_wrapper:true };
+    if(!servidorDesde('1.5.4')) payload.fotos={ facturas:f.docs.facturas.map(d=>d.foto), guias:f.docs.guias.map(d=>d.foto), cotas:f.docs.cotas.map(d=>d.foto) }; /* servidor viejo: las fotos van aparte (duplicadas) */
+    const j=await postEnvioConfirmado(x.id, payload, msg);
+    await enCola(async()=>{ const x2=await dbGet(x.id); if(!x2) return; x2.pago=Object.assign({},x2.pago||{},{enviado_en:j.enviado_en||new Date().toISOString(), enviado_por:sesion.nombre, token:j.token||(x2.pago&&x2.pago.token)||null, decision:null, justificacion_ia:justificacion||null}); x2.version=(x2.version||1); logEntry(x2,'enviada a pago',(j.confirmado_por_consulta?'confirmada por consulta al servidor · ':'')+'correo a '+(j.destinatarios||'administradores')); x2.nube=Object.assign({},x2.nube||{},{pendiente:true}); await dbPut(x2); doneW=x2; });
     const x3=await dbGet(x.id); msg.className='msg ok'; msg.textContent='Enviada: '+(j.destinatarios||'los administradores')+' recibieron el correo con el PDF y el enlace para autorizar el pago.'; renderDoneStatus(x3); renderPagoPanel(x3); $('btn-enviar-pago').innerHTML='📤 Reenviar a pago (actualizada)<span class="sub" id="pago-sub">Ya enviada · reenvíe solo si la modificó</span>'; programarSubida(2000); renderHome(); }
-  catch(e){ msg.className='msg bad'; msg.textContent='No se pudo enviar: '+(e.message||e)+'. La orden quedó guardada; intente de nuevo.'; }
-  finally{ $('btn-enviar-pago').disabled=false; } }
+  catch(e){ msg.className='msg bad'; msg.textContent='No se pudo enviar: '+textoErrorRed(e)+'. La orden quedó guardada: revise la señal y vuelva a intentar. Si no sale, pruebe desde el celular o con Wi‑Fi.'; }
+  finally{ $('btn-enviar-pago').disabled=false; soltarWakeLock(wl); } }
+/* v1.5.4: envío robusto. El servidor hace mucho trabajo en una sola llamada (Drive, planilla, correo con adjunto) y Safari (iPhone/iPad)
+   corta la petición si se apaga la pantalla, se cambia de app o pasan ~60 s sin respuesta ("Load failed"). Antes de enviar se anota el
+   estado de pago que tiene el servidor; si la red falla, se consulta de nuevo: si el servidor registró el envío, se toma como hecho
+   (sin mandar un segundo correo); si no, se reintenta hasta 3 veces. */
+const esErrorRed = e => !(e&&e.servidor);
+function textoErrorRed(e){ const m=String(e&&e.message||e||''); if(e&&e.servidor) return m; if(/load failed|failed to fetch|networkerror|network request failed|abort|timed? ?out/i.test(m)) return 'se cortó la conexión con el servidor ('+m+')'; return m; }
+async function estadoPagoServidor(id){ try{ const j=await post({tipo:'estado_pago', ids:[id]},{timeout:30000}); return (j.estados&&j.estados[id])||null; }catch(e){ return undefined; } }
+async function postEnvioConfirmado(id, payload, msg){ const antes=await estadoPagoServidor(id); const marcaAntes=antes&&antes.enviado_en?String(antes.enviado_en):''; let ultimo=null;
+  for(let intento=1; intento<=3; intento++){
+    try{ return await post(payload,{timeout:180000}); }
+    catch(e){ ultimo=e; if(!esErrorRed(e)) throw e; if(!navigator.onLine) throw new Error('sin señal');
+      msg.className='msg warn'; msg.textContent='La conexión se cortó mientras se enviaba. Consultando si el servidor recibió la orden…'; await esperar(4000+intento*3000);
+      const desp=await estadoPagoServidor(id); if(desp&&desp.enviado_en&&String(desp.enviado_en)!==marcaAntes&&(!desp.enviado_por||desp.enviado_por===sesion.nombre)) return { ok:true, token:desp.token, enviado_en:desp.enviado_en, destinatarios:'los administradores', confirmado_por_consulta:true };
+      if(intento<3){ msg.className='msg'; msg.textContent='El servidor no la recibió. Reintentando ('+(intento+1)+' de 3)… mantenga la pantalla encendida.'; } } }
+  throw ultimo||new Error('sin respuesta'); }
+function esperar(ms){ return new Promise(r=>setTimeout(r,ms)); }
+async function pedirWakeLock(){ try{ if(navigator.wakeLock&&navigator.wakeLock.request) return await navigator.wakeLock.request('screen'); }catch(e){} return null; }
+function soltarWakeLock(wl){ try{ if(wl&&wl.release) wl.release(); }catch(e){} }
 function pedirJustificacion(texto){ return new Promise(res=>{ const m=$('override-modal'); $('override-texto').textContent=texto; $('override-just').value=''; m.classList.remove('hidden'); const cerrar=v=>{ m.classList.add('hidden'); $('override-ok').onclick=null; $('override-cancel').onclick=null; res(v); }; $('override-cancel').onclick=()=>cerrar(null); $('override-ok').onclick=()=>{ cerrar($('override-just').value.trim()); }; /* comentario opcional */ }); }
 $('btn-enviar-pago').addEventListener('click',()=>{ if(doneW) enviarPago(doneW); });
 
