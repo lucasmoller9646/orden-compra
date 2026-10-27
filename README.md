@@ -1,8 +1,12 @@
-# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 1.6
+# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 1.6.1
 
 App para que los comisionistas y el director de originación registren cada compra de ganado desde el corral: datos del lote, pesaje animal por animal, foto de los animales carimbados, video opcional, ubicación del corral, distancia por ruta y transportadora sugerida, precio, comisión y liquidación (IVA 5 % y 10 %, dólares, puesto en estancia); en la segunda página la guía, la factura y los datos bancarios, con una verificación automática por IA. Al completar todo, la orden se envía a pago: los administradores reciben un correo con el PDF y un enlace donde autorizan (contado con urgencia o plazo), y el sistema agrega la fila en **COMPRAS DE DESMAMANTES 9**, avisa a Laura para Asana y crea la tarea en Asana.
 
 Está construido sobre el app **Registro de manejo** (misma base: PWA que se agrega a la pantalla de inicio, funciona sin señal, guarda solo cada 2 segundos en el teléfono y copia a la nube cuando hay señal, PIN de 6 números verificado por el servidor, PDF generado en el teléfono con pdf-lib, mapa OpenStreetMap, servidor en Google Apps Script con planilla + Drive + correo).
+
+## Novedades 1.6.1
+- **Mensaje al vendedor completo**: con «📋 Copiar» o «💬 WhatsApp al vendedor» (en el destino y debajo de «Cómo facturar») el comisionista manda en un solo texto el código SENACSA del establecimiento de destino, los datos del comprador y un ejemplo de cómo escribir la factura con los importes de esa compra y el **total en letras**.
+- **Factura modelo con el importe en letras**, solo en el app (y en el mensaje); el PDF conserva la tabla «Cómo facturar» sin el dibujo.
 
 ## Novedades 1.6
 - **Video en alta calidad grabado dentro del app**: «Grabar video» abre la cámara en el app (1080p, ~8 Mbps) y guarda el archivo tal cual. Motivo: el selector de videos de iPhone/Safari entrega los videos reducidos a 1024×576 y ~1,3 Mbps (verificado en un video real); ni el app ni el servidor reducen nada, el archivo sube a Drive byte por byte. El video sigue subiendo en segundo plano por partes de 3 MB cuando hay señal. Si el teléfono no permite grabar en el app, se abre la cámara del sistema como antes.
