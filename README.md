@@ -1,8 +1,17 @@
-# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 1.6.1
+# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 1.7
 
 App para que los comisionistas y el director de originación registren cada compra de ganado desde el corral: datos del lote, pesaje animal por animal, foto de los animales carimbados, video opcional, ubicación del corral, distancia por ruta y transportadora sugerida, precio, comisión y liquidación (IVA 5 % y 10 %, dólares, puesto en estancia); en la segunda página la guía, la factura y los datos bancarios, con una verificación automática por IA. Al completar todo, la orden se envía a pago: los administradores reciben un correo con el PDF y un enlace donde autorizan (contado con urgencia o plazo), y el sistema agrega la fila en **COMPRAS DE DESMAMANTES 9**, avisa a Laura para Asana y crea la tarea en Asana.
 
 Está construido sobre el app **Registro de manejo** (misma base: PWA que se agrega a la pantalla de inicio, funciona sin señal, guarda solo cada 2 segundos en el teléfono y copia a la nube cuando hay señal, PIN de 6 números verificado por el servidor, PDF generado en el teléfono con pdf-lib, mapa OpenStreetMap, servidor en Google Apps Script con planilla + Drive + correo).
+
+## Novedades 1.7 (app 1.7.0 · servidor 1.7.0)
+- **Hoja de pesaje en modo «SIAP (HID)»**: además de «Solo peso», el comisionista puede elegir «SIAP (HID)» y cargar **un brinco y un peso, un brinco y un peso**. El brinco entra solo con el bastón Tru-Test en modo HID (funciona como teclado Bluetooth: escribe el número y un Enter); el app pasa al peso, que se escribe con el teclado de números del propio app (así no depende del teclado del celular, que suele esconderse cuando hay un teclado Bluetooth conectado). «✓ Guardar pesada» y el app vuelve a esperar el siguiente brinco.
+  - Avisa si un brinco ya fue leído (y en qué pesada), si no tiene 15 dígitos o si un peso está fuera de lo normal (menos de 30 o más de 1.200 kg).
+  - Si el bastón lee cuando el foco quedó en otro lado, igual entra como brinco. Sin Enter, toma el brinco solo al llegar a 15 dígitos.
+  - «✎ Escribir brinco» para cargarlo a mano si un brinco no se lee. «⬇ CSV brinco;peso» descarga la lista (Nro;IDE;Peso).
+  - Cada pesada muestra el brinco debajo del peso, editable. El PDF lleva la hoja de pesaje con N° · Brinco (IDE) · Peso.
+  - Dentro del app hay una guía «¿Cómo configurar el bastón Tru-Test?» (Settings › Bluetooth › Advanced › Connect Mode: HID, emparejar y leer).
+- **Servidor 1.7.0**: la hoja `pesos` de la base suma la columna `ide` (se agrega sola). Con el servidor anterior todo sigue funcionando y los brincos quedan igual en el JSON de cada orden en Drive; para tenerlos en la hoja `pesos`, actualizar el servidor.
 
 ## Novedades 1.6.1
 - **Mensaje al vendedor completo**: con «📋 Copiar» o «💬 WhatsApp al vendedor» (en el destino y debajo de «Cómo facturar») el comisionista manda en un solo texto el código SENACSA del establecimiento de destino, los datos del comprador y un ejemplo de cómo escribir la factura con los importes de esa compra y el **total en letras**.

@@ -543,6 +543,26 @@ input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and
 .item.stub .l2::after{content:' · ☁ en la nube';color:var(--muted)}
 .res-linea{margin-top:6px;padding:8px 10px;border-radius:8px;font-weight:600;font-size:14.5px}.res-linea.ok{background:#DCEAE0;color:#04522B}.res-linea.bad{background:#F6E0DA;color:#8A2A12}
 
+/* v1.7: pesaje SIAP (brinco con bastón HID + peso) */
+.siap{gap:10px}
+.siap-row{display:grid;grid-template-columns:1.6fr 1fr;gap:8px}
+.siap-cell{display:flex;flex-direction:column;gap:4px;border:2px solid var(--line-strong);border-radius:10px;padding:8px 10px;background:var(--surface)}
+.siap-cell span{font-size:12px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px}
+.siap-cell input::placeholder{font-size:15px;font-family:var(--font-ui,inherit);font-weight:500}
+.siap-cell input,.siap-cell output{border:0;background:transparent;padding:0;min-height:36px;font-family:var(--font-mono);font-size:20px;font-weight:700;color:var(--ink);width:100%;display:flex;align-items:center}
+.siap-cell output{font-size:26px;justify-content:flex-end}
+.siap-cell.activa{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 25%,transparent)}
+.siap-cell.listo{border-color:var(--ok,#2E7D4F)}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.keypad button{appearance:none;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-family:var(--font-mono);font-size:26px;font-weight:700;min-height:58px;cursor:pointer;touch-action:manipulation}
+.keypad button:active{background:var(--brand);color:var(--brand-ink)}
+.siap-ayuda{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}
+.siap-ayuda summary{font-weight:600;cursor:pointer}
+.siap-ayuda ol{margin:8px 0 6px 20px;padding:0;display:flex;flex-direction:column;gap:4px}
+.siap-ayuda code{font-family:var(--font-mono);background:var(--surface-2,rgba(0,0,0,.06));padding:1px 5px;border-radius:5px}
+.w .wi{flex:0 0 100%;border-top:1px solid var(--line)!important;font-size:12px!important;font-weight:600!important;min-height:30px!important;padding:4px 6px!important;text-align:center!important;letter-spacing:-.2px;color:var(--ink-2)}
+.w.dup{border-color:var(--bad)}
+
 </style>
 </head>
 <body>
@@ -629,7 +649,35 @@ input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and
       <div class="card stack" id="card-pesaje">
         <div class="section-title" style="justify-content:space-between"><div style="display:flex;align-items:center;gap:10px"><span class="dot"></span><h3 id="pesaje-titulo">3 · Hoja de pesaje (kg)</h3></div><span class="badge" id="count-badge">0 pesados</span></div>
         <div id="wrap-hoja" class="stack">
-          <div class="entry"><input type="number" id="peso-input" inputmode="decimal" step="any" placeholder="Peso en kg"><button class="btn primary" id="btn-add" type="button">Agregar</button></div>
+          <div class="seg" id="seg-pesaje-modo"><button type="button" data-v="peso">Solo peso<small>se escribe cada peso</small></button><button type="button" data-v="siap">SIAP (HID)<small>brinco con bastón + peso</small></button></div>
+          <div class="entry" id="entry-peso"><input type="number" id="peso-input" inputmode="decimal" step="any" placeholder="Peso en kg"><button class="btn primary" id="btn-add" type="button">Agregar</button></div>
+          <div class="siap stack hidden" id="wrap-siap">
+            <div class="siap-row">
+              <label class="siap-cell" id="siap-cell-ide"><span>1 · Brinco (IDE)</span><input type="text" id="siap-ide" inputmode="none" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Lea con el bastón"></label>
+              <div class="siap-cell" id="siap-cell-peso"><span>2 · Peso (kg)</span><output id="siap-peso">—</output></div>
+            </div>
+            <div class="msg" id="siap-msg">Toque «Empezar» y lea el primer brinco con el bastón.</div>
+            <div class="keypad" id="siap-keypad">
+              <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+              <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+              <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+              <button type="button" data-k=",">,</button><button type="button" data-k="0">0</button><button type="button" data-k="del" aria-label="Borrar">⌫</button>
+            </div>
+            <div class="row"><button class="btn" type="button" id="siap-manual">✎ Escribir brinco</button><button class="btn primary" type="button" id="siap-ok">✓ Guardar pesada</button></div>
+            <div class="row"><button class="btn" type="button" id="siap-empezar">▶ Empezar a leer</button><button class="btn" type="button" id="siap-csv">⬇ CSV brinco;peso</button></div>
+            <details class="siap-ayuda"><summary>¿Cómo configurar el bastón Tru-Test?</summary>
+              <ol>
+                <li>En el bastón, entre en <b>Settings</b> (Configuración).</li>
+                <li>Elija <b>Bluetooth</b>.</li>
+                <li>Entre en <b>Advanced</b> (Avanzado).</li>
+                <li>En <b>Connect Mode</b>, cambie de <code>Default</code> a <code>HID</code>.</li>
+                <li>Active el Bluetooth y empareje el bastón con el celular (en el celular: Ajustes › Bluetooth › elegir el bastón).</li>
+                <li>Abra este app, elija <b>SIAP (HID)</b> y toque <b>▶ Empezar a leer</b>.</li>
+                <li>Lea un brinco electrónico con el bastón: el número aparece solo y el app pasa al peso.</li>
+              </ol>
+              <p class="hint">En modo HID el bastón funciona como un teclado Bluetooth: escribe el número del brinco y un «Enter». Por eso el peso se carga con el teclado de números del app, que no depende del teclado del celular. Para volver a usar el bastón con el app de Tru-Test (Data Link), vuelva <b>Connect Mode</b> a <code>Default</code>.</p>
+            </details>
+          </div>
           <div class="entry-info"><span id="last-info">Toque Agregar o Enter tras cada pesada</span><span id="sum-info"></span></div>
           <div class="weights" id="weights"></div>
         </div>
@@ -964,7 +1012,7 @@ const LOGO_PDF_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAaIAAAB4CAYAAACw2faSAACLZklEQVR42u
    Construido sobre el app "Registro de manejo" (misma base: PWA sin conexión, IndexedDB + autoguardado,
    copia en la nube, contraseñas de 4 números verificadas por el servidor, PDF con pdf-lib, mapa OSM).
    ===================================================================================================== */
-const APP_VERSION = '1.6.1';
+const APP_VERSION = '1.7.0';
 const ESQUEMA = 'compras-ypoti/1';
 const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzpJMDSnuFe7jQjVYM7pqa-Q1Jnydm21VRosUvgcLKhAv8DFrDMRrV5ih-A9sLAhXX0Tg/exec'; // URL /exec del servidor (Apps Script) · ver README
 const EMPRESA = { razon_social:'RURAL BIOENERGIA S.A.', ruc:'80050418-6', ruc_base:'80050418' };
@@ -1121,7 +1169,7 @@ const TRANSPORTISTAS = {
 const telIntl = t => '595'+String(t||'').replace(/\D/g,'').replace(/^0/,'');
 function nuevoBanco(){ return {id:uuid(), titular:'', entidad:'', cuenta:'', moneda:'GS', doc_tipo:'RUC', doc:''}; }
 function nuevaOrden(){ return { comisionista: sesion&&!esAdmin()?sesion.nombre:'', comisionista_otro:'', proveedor:'', categoria:'', cantidad:'', fecha:todayISO(), hora:nowHM(), localidad:'', ubicacion:null, carimbo:'', sola_marca:'', raza:'',
-  precio_modo:'kg', kg_modo:'simple', rangos:[{desde:'0', hasta:'', precio:''}], precio:'', pesos:[], peso_est:'',
+  precio_modo:'kg', kg_modo:'simple', rangos:[{desde:'0', hasta:'', precio:''}], precio:'', pesos:[], ides:[], pesaje_modo:'peso', peso_est:'',
   destino:'', km:'', km_fuente:'', km_detalle:'', ruta:null, retorno:'no', flete:{prov:'', otro:'', precio:'', viajes:'', cab_camion:'', auto:true, viajes_auto:true},
   com_modo:'', com_tasa:'', cambio:(cfg.cambio||''), obs:'',
   docs:{facturas:[], guias:[], cotas:[]}, pago_medio:'', bancos:[nuevoBanco()] }; }
@@ -1130,7 +1178,7 @@ function enCola(fn){ const p=colaGuardado.then(()=>fn()); colaGuardado=p.catch((
 function formActivo(){ return $('scr-form').classList.contains('active'); }
 /* campos simples: id del input -> clave en F */
 const FIELDS={ 'f-proveedor':'proveedor','f-categoria':'categoria','f-cantidad':'cantidad','f-fecha':'fecha','f-hora':'hora','f-localidad':'localidad','f-carimbo':'carimbo','f-precio':'precio','f-peso-est':'peso_est','f-destino':'destino','f-km':'km','f-flete-otro':'flete.otro','f-flete-precio':'flete.precio','f-flete-viajes':'flete.viajes','f-cab-camion':'flete.cab_camion','f-com-tasa':'com_tasa','f-cambio':'cambio','f-obs':'obs' };
-const SEGS={ 'seg-pago-medio':'pago_medio', 'seg-kg-modo':'kg_modo', 'seg-sola-marca':'sola_marca','seg-raza':'raza','seg-retorno':'retorno','seg-flete':'flete.prov','seg-precio-modo':'precio_modo','seg-com-modo':'com_modo' };
+const SEGS={ 'seg-pago-medio':'pago_medio', 'seg-kg-modo':'kg_modo', 'seg-sola-marca':'sola_marca','seg-raza':'raza','seg-retorno':'retorno','seg-flete':'flete.prov','seg-precio-modo':'precio_modo','seg-com-modo':'com_modo', 'seg-pesaje-modo':'pesaje_modo' };
 const getP=(o,p)=>p.split('.').reduce((a,k)=>a==null?a:a[k],o);
 const setP=(o,p,v)=>{ const ks=p.split('.'); let a=o; ks.slice(0,-1).forEach(k=>{ if(a[k]==null) a[k]={}; a=a[k]; }); a[ks[ks.length-1]]=v; };
 function destinoCod(){ const e=estancia(F.destino); return e?e.cod:''; }
@@ -1141,6 +1189,7 @@ function migrarForm(f){ f=f||nuevaOrden(); const base=nuevaOrden();
   if(!f.flete) f.flete=base.flete; ['cab_camion','viajes_auto','auto'].forEach(k=>{ if(f.flete[k]===undefined) f.flete[k]=base.flete[k]; }); if(!Array.isArray(f.rangos)||!f.rangos.length) f.rangos=JSON.parse(JSON.stringify(base.rangos)); if(!f.kg_modo) f.kg_modo='simple';
   if((f.cantidad===''||f.cantidad==null) && (f.cabezas||((f.pesos||[]).length))) f.cantidad=String(f.cabezas||f.pesos.length);
   if(f.com_modo==='kg'){ f.com_modo='cab'; }
+  if(!Array.isArray(f.ides)) f.ides=[]; while(f.ides.length<(f.pesos||[]).length) f.ides.push(''); if(f.ides.length>(f.pesos||[]).length) f.ides.length=(f.pesos||[]).length; if(!f.pesaje_modo) f.pesaje_modo='peso';
   if(!f.docs){ f.docs={facturas:[], guias:[], cotas:[]}; if(f.foto_factura) f.docs.facturas.push({id:uuid(), foto:f.foto_factura}); (f.guias||[]).forEach(g=>{ if(g.foto) f.docs.guias.push({id:uuid(), foto:g.foto}); if(g.cota_foto) f.docs.cotas.push({id:uuid(), foto:g.cota_foto}); }); }
   ['facturas','guias','cotas'].forEach(k=>{ if(!Array.isArray(f.docs[k])) f.docs[k]=[]; });
   if(!Array.isArray(f.bancos)||!f.bancos.length){ const b=f.banco; f.bancos=[Object.assign(nuevoBanco(), b||{})]; }
@@ -1168,18 +1217,55 @@ function cabezasDe(f){ return Math.max(0, Math.round(num(f.cantidad))); }
 function pesoTotalDe(f){ if(f.precio_modo==='kg') return (f.pesos||[]).reduce((a,b)=>a+num(b),0); const c=cabezasDe(f); return c && num(f.peso_est)>0 ? c*num(f.peso_est) : 0; }
 function promedioDe(f){ if(f.precio_modo==='kg'){ const n=(f.pesos||[]).length; return n? pesoTotalDe(f)/n : 0; } return num(f.peso_est); }
 function cabezas(){ return cabezasDe(F); }
-function addPeso(){ const inp=$('peso-input'); const v=num(inp.value); if(!(v>0)){ inp.focus(); return; } F.pesos.push(v); inp.value=''; dirty=true; renderPesos(); inp.focus(); }
+function addPeso(){ const inp=$('peso-input'); const v=num(inp.value); if(!(v>0)){ inp.focus(); return; } F.pesos.push(v); F.ides.push(''); inp.value=''; dirty=true; renderPesos(); inp.focus(); }
 /* v1.6: la hoja de pesaje muestra solo el peso (sin valor por animal); en compra por rango avisa si un peso queda fuera de los rangos */
 function renderPesosValores(){ document.querySelectorAll('#weights .w').forEach((d,i)=>{ const vs=d.querySelector('.v'); const pr=F.precio_modo==='kg'?precioDePeso(F,F.pesos[i]):0; vs.textContent=(esRango(F)&&F.pesos[i]>0&&!(pr>0))?'Fuera de los rangos':''; }); }
 function renderPesos(){ const box=$('weights'); box.innerHTML='';
   if(!F.pesos.length) box.innerHTML='<div class="empty">Todavía no hay pesadas.</div>';
   F.pesos.forEach((v,i)=>{ const d=document.createElement('div'); d.className='w'; const n=document.createElement('span'); n.className='n'; n.textContent=i+1; const inp=document.createElement('input'); inp.type='number'; inp.inputMode='decimal'; inp.step='any'; inp.value=v; inp.setAttribute('aria-label','Pesada '+(i+1));
     const vs=document.createElement('span'); vs.className='v';
-    inp.addEventListener('input',()=>{ F.pesos[i]=num(inp.value); dirty=true; renderTotales(); renderPesosValores(); renderResumenRangos(); }); const del=document.createElement('button'); del.type='button'; del.textContent='×'; del.setAttribute('aria-label','Quitar pesada '+(i+1)); del.addEventListener('click',()=>{ F.pesos.splice(i,1); dirty=true; renderPesos(); });
-    d.appendChild(n); d.appendChild(inp); d.appendChild(del); d.appendChild(vs); box.appendChild(d); });
+    inp.addEventListener('input',()=>{ F.pesos[i]=num(inp.value); dirty=true; renderTotales(); renderPesosValores(); renderResumenRangos(); }); const del=document.createElement('button'); del.type='button'; del.textContent='×'; del.setAttribute('aria-label','Quitar pesada '+(i+1)); del.addEventListener('click',()=>{ F.pesos.splice(i,1); F.ides.splice(i,1); dirty=true; renderPesos(); });
+    d.appendChild(n); d.appendChild(inp); d.appendChild(del); d.appendChild(vs);
+    if(F.pesaje_modo==='siap'||F.ides[i]){ const wi=document.createElement('input'); wi.className='wi'; wi.type='text'; wi.inputMode='numeric'; wi.placeholder='Brinco'; wi.value=F.ides[i]||''; wi.setAttribute('aria-label','Brinco de la pesada '+(i+1)); wi.addEventListener('change',()=>{ F.ides[i]=normIde(wi.value); wi.value=F.ides[i]; dirty=true; marcarDuplicados(); }); d.appendChild(wi); if(F.ides[i]&&F.ides.indexOf(F.ides[i])!==i) d.classList.add('dup'); }
+    box.appendChild(d); });
   const last=F.pesos[F.pesos.length-1]; $('last-info').textContent=F.pesos.length?'Última pesada: #'+F.pesos.length+' = '+fmt(last,1)+' kg':'Toque Agregar o Enter tras cada pesada'; $('sum-info').textContent=F.pesos.length?fmt(pesoTotalDe(F),1)+' kg acumulados':'';
   renderPesosValores(); renderResumenRangos(); renderTotales(); }
 $('btn-add').addEventListener('click',addPeso);
+/* ---------- v1.7: pesaje SIAP (HID). El bastón Tru-Test en modo HID es un teclado Bluetooth: escribe el número del brinco y un Enter.
+   El brinco entra por el teclado (bastón); el peso, por el teclado de números del app, así el bastón y el peso nunca se mezclan.
+   Ciclo: brinco → peso → ✓ → brinco → peso … ---------- */
+const SIAP={ etapa:'ide', ide:'', peso:'', timer:null };
+function normIde(v){ return String(v||'').toUpperCase().replace(/[^0-9A-Z]/g,''); }
+function marcarDuplicados(){ document.querySelectorAll('#weights .w').forEach((d,i)=>d.classList.toggle('dup', !!(F.ides[i]&&F.ides.indexOf(F.ides[i])!==i))); }
+function siapMsg(t,cls){ const m=$('siap-msg'); m.className='msg'+(cls?' '+cls:''); m.textContent=t; }
+function siapRender(){ $('siap-ide').value=SIAP.ide; $('siap-peso').textContent=SIAP.peso?SIAP.peso:'—'; $('siap-cell-ide').classList.toggle('activa',SIAP.etapa==='ide'); $('siap-cell-ide').classList.toggle('listo',SIAP.etapa==='peso'); $('siap-cell-peso').classList.toggle('activa',SIAP.etapa==='peso'); }
+function siapFoco(){ const i=$('siap-ide'); if(document.activeElement!==i){ try{ i.focus({preventScroll:true}); }catch(e){ i.focus(); } } }
+function renderPesajeModo(){ const siap=F.pesaje_modo==='siap'; $('entry-peso').classList.toggle('hidden',siap); $('wrap-siap').classList.toggle('hidden',!siap); $('last-info').parentElement.classList.toggle('hidden',siap&&!F.pesos.length); if(siap){ SIAP.etapa='ide'; SIAP.ide=''; SIAP.peso=''; siapRender(); siapMsg('Toque «Empezar a leer» y lea el primer brinco con el bastón.'); } renderPesos(); }
+function siapAceptarIde(raw){ clearTimeout(SIAP.timer); const v=normIde(raw!=null?raw:$('siap-ide').value); if(!v){ siapRender(); return; }
+  const rep=F.ides.indexOf(v); if(rep>=0){ SIAP.ide=''; SIAP.etapa='ide'; siapRender(); siapMsg('Este brinco ya está en la pesada #'+(rep+1)+' ('+fmt(F.pesos[rep],1)+' kg). Lea el siguiente animal.','bad'); try{ navigator.vibrate&&navigator.vibrate([80,60,80]); }catch(e){} siapFoco(); return; }
+  const cambio=SIAP.etapa==='peso'&&SIAP.ide&&SIAP.ide!==v; SIAP.ide=v; SIAP.etapa='peso'; siapRender();
+  siapMsg((cambio?'Brinco cambiado: ':'Brinco ')+v+(v.length!==15?' (ojo: no tiene 15 dígitos)':'')+' ✓ — ahora escriba el peso y toque «Guardar».', v.length!==15?'warn':'ok'); try{ navigator.vibrate&&navigator.vibrate(40); }catch(e){} siapFoco(); }
+function siapTecla(k){ if(SIAP.etapa!=='peso'){ siapMsg('Primero lea el brinco con el bastón (o toque «Escribir brinco»).','warn'); siapFoco(); return; }
+  let p=SIAP.peso; if(k==='del') p=p.slice(0,-1); else if(k===','){ if(!p.includes(',')) p=(p||'0')+','; } else { const [e,d]=p.split(','); if(d!==undefined){ if(d.length<1) p+=k; } else if((e||'').length<4) p+=k; }
+  SIAP.peso=p; siapRender(); siapFoco(); }
+function siapGuardar(){ if(SIAP.etapa!=='peso'||!SIAP.ide){ siapMsg('Falta el brinco: léalo con el bastón.','warn'); siapFoco(); return; } const v=num(SIAP.peso.replace(',','.'));
+  if(!(v>0)){ siapMsg('Falta el peso: escríbalo con el teclado de números.','warn'); siapFoco(); return; }
+  if(v<30||v>1200){ if(!confirm('¿'+fmt(v,1)+' kg? Parece fuera de lo normal. ¿Guardar igual?')){ siapFoco(); return; } }
+  F.pesos.push(v); F.ides.push(SIAP.ide); dirty=true; const n=F.pesos.length, ide=SIAP.ide; SIAP.ide=''; SIAP.peso=''; SIAP.etapa='ide'; renderPesos(); siapRender();
+  const cab=cabezasDe(F); siapMsg('#'+n+' guardada: '+ide+' · '+fmt(v,1)+' kg'+(cab?' ('+n+' de '+cab+')':'')+'. Lea el siguiente brinco.','ok'); try{ navigator.vibrate&&navigator.vibrate(30); }catch(e){} siapFoco(); }
+$('siap-ide').addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key==='Tab'){ e.preventDefault(); siapAceptarIde(); } });
+$('siap-ide').addEventListener('input',()=>{ const raw=$('siap-ide').value; if(SIAP.etapa==='peso'&&normIde(raw)!==SIAP.ide){ /* lectura nueva mientras se esperaba el peso: el texto se acumula detrás del brinco anterior */ const nuevo=raw.startsWith(SIAP.ide)?raw.slice(SIAP.ide.length):raw; $('siap-ide').value=nuevo; } clearTimeout(SIAP.timer); const d=normIde($('siap-ide').value); if(d.length>=15) SIAP.timer=setTimeout(()=>siapAceptarIde(),350); });
+$('siap-keypad').addEventListener('pointerdown',e=>{ if(e.target.closest('button')) e.preventDefault(); });
+$('siap-keypad').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) siapTecla(b.dataset.k); });
+['siap-ok','siap-manual','siap-empezar','siap-csv'].forEach(id=>$(id).addEventListener('pointerdown',e=>{ if(id!=='siap-manual'&&id!=='siap-csv') e.preventDefault(); }));
+$('siap-ok').addEventListener('click',siapGuardar);
+$('siap-empezar').addEventListener('click',()=>{ const i=$('siap-ide'); i.inputMode='none'; SIAP.etapa=SIAP.ide?'peso':'ide'; siapRender(); siapFoco(); siapMsg(SIAP.etapa==='ide'?'Listo: lea el brinco con el bastón.':'Escriba el peso y toque «Guardar».'); });
+$('siap-manual').addEventListener('click',()=>{ const i=$('siap-ide'); SIAP.etapa='ide'; SIAP.ide=''; siapRender(); i.inputMode='numeric'; i.blur(); setTimeout(()=>{ i.focus(); },30); siapMsg('Escriba el número del brinco y toque Enter (↵) en el teclado.'); });
+$('siap-ide').addEventListener('blur',()=>{ if($('siap-ide').inputMode==='numeric') setTimeout(()=>{ $('siap-ide').inputMode='none'; },300); });
+/* si el foco quedó en otro lado (un botón), las teclas del bastón igual van al brinco */
+document.addEventListener('keydown',e=>{ if(!F||F.pesaje_modo!=='siap'||$('wrap-siap').classList.contains('hidden')||$('pag1').classList.contains('hidden')) return; const a=document.activeElement; if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT'||a.isContentEditable)) return;
+  if(/^[0-9A-Za-z]$/.test(e.key)){ e.preventDefault(); siapFoco(); const i=$('siap-ide'); if(SIAP.etapa==='peso'){ i.value=''; } i.value+=e.key; i.dispatchEvent(new Event('input')); } else if(e.key==='Enter'&&SIAP.etapa==='ide'&&$('siap-ide').value){ e.preventDefault(); siapAceptarIde(); } });
+$('siap-csv').addEventListener('click',()=>{ if(!F.pesos.length){ toast('Todavía no hay pesadas.'); return; } const lin=['Nro;IDE;Peso'].concat(F.pesos.map((p,i)=>(i+1)+';'+(F.ides[i]||'')+';'+String(p).replace('.',','))); const blob=new Blob(['﻿'+lin.join('\r\n')],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='pesaje_'+(F.proveedor||'orden').replace(/[^A-Za-z0-9]+/g,'_')+'_'+(F.fecha||'')+'.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); });
 $('peso-input').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addPeso(); } });
 function calc(F){ const cab=cabezasDe(F), peso=pesoTotalDe(F), prom=promedioDe(F), modoKg=F.precio_modo==='kg'; const pesados=(F.pesos||[]).length; const rango=esRango(F); const RR=rango?resumenRangos(F):null;
   const pagar = rango ? RR.rangos.reduce((a,r)=>a+r.sub,0) : modoKg ? peso*num(F.precio) : cab*num(F.precio); const precio = rango ? (peso?pagar/peso:0) : num(F.precio); const ok = cab>0 && (rango ? (RR.rangos.length>0 && peso>0 && RR.fuera===0) : precio>0 && (modoKg ? peso>0 : true));
@@ -1502,7 +1588,7 @@ function elegirComisionista(n){ F.comisionista=n; $('f-comisionista').value=n; d
 function applyForm(){ pintarComisionistas();
   fillSelect($('f-destino'), ESTANCIAS.map(e=>({v:e.n, t:e.n+(e.cod?' — cód. '+e.cod:'')})).concat([{v:DESTINO_A_DEFINIR,t:DESTINO_A_DEFINIR}]), 'Seleccionar…');
   Object.keys(FIELDS).forEach(id=>{ const v=getP(F,FIELDS[id]); $(id).value = v==null?'':v; });
-  Object.keys(SEGS).forEach(id=>setSeg($(id), getP(F,SEGS[id])||'')); showDestino(); renderDatosGuia();
+  Object.keys(SEGS).forEach(id=>setSeg($(id), getP(F,SEGS[id])||'')); showDestino(); renderDatosGuia(); renderPesajeModo();
   renderUbic(); renderKm(); renderFlete(); renderPrecioModo(); renderComModo(); renderPesos(); renderDocs(); renderBancos(); renderVideo(); renderIA(); pintarCambioHint(); }
 function showDestino(){ const e=estancia(F.destino); $('destino-cod').textContent = e ? (e.cod?'Código SENACSA del establecimiento: '+e.cod:'Sin código cargado todavía') + (e.sinCoord?' · sin coordenadas: escriba los km a mano':'') : (F.destino===DESTINO_A_DEFINIR?'Destino a definir: el flete se calcula cuando se elija la estancia.':''); }
 /* v1.6: lo que el vendedor necesita para emitir la guía, la COTA y la factura, listo para copiar o mandar por WhatsApp */
@@ -1537,7 +1623,7 @@ Object.keys(FIELDS).forEach(id=>{ const el=$(id); const h=()=>{ setP(F, FIELDS[i
 $('f-comisionista').addEventListener('input',()=>{ if($('f-comisionista').readOnly) return; F.comisionista=$('f-comisionista').value.trim(); dirty=true; sugerirComisionistas(); });
 $('f-comisionista').addEventListener('focus',()=>{ if(!$('f-comisionista').readOnly){ sugerirComisionistas(); if(esAdmin() && navigator.onLine && !(usuarios.intermediarios||[]).length) cargarIntermediarios(true).then(sugerirComisionistas); } });
 $('f-comisionista').addEventListener('blur',()=>setTimeout(()=>$('com-sug').classList.add('hidden'),150));
-Object.keys(SEGS).forEach(id=>{ if(id==='seg-flete') return; $(id).addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; setP(F, SEGS[id], b.dataset.v); setSeg($(id), b.dataset.v); dirty=true; if(id==='seg-retorno') renderFlete(); if(id==='seg-pago-medio'){ renderPagoMedio(); iaInvalidar(); } if(id==='seg-precio-modo'||id==='seg-kg-modo'){ renderPrecioModo(); renderPesos(); iaInvalidar(); } if(id==='seg-com-modo'){ renderComModo(); renderTotales(); if(F.com_modo!=='sin') setTimeout(()=>$('f-com-tasa').focus(),50); } }); });
+Object.keys(SEGS).forEach(id=>{ if(id==='seg-flete') return; $(id).addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; setP(F, SEGS[id], b.dataset.v); setSeg($(id), b.dataset.v); dirty=true; if(id==='seg-retorno') renderFlete(); if(id==='seg-pago-medio'){ renderPagoMedio(); iaInvalidar(); } if(id==='seg-precio-modo'||id==='seg-kg-modo'){ renderPrecioModo(); renderPesos(); iaInvalidar(); } if(id==='seg-com-modo'){ renderComModo(); renderTotales(); if(F.com_modo!=='sin') setTimeout(()=>$('f-com-tasa').focus(),50); } if(id==='seg-pesaje-modo'){ renderPesajeModo(); if(F.pesaje_modo==='siap') setTimeout(siapFoco,50); } }); });
 
 /* ---------- validación: datos obligatorios ---------- */
 function faltantesDe(f){ f=migrarForm(f); const out=[]; const add=(p,campo,titulo)=>out.push({pagina:p, campo, titulo}); const c=calc(f);
@@ -1589,7 +1675,7 @@ function buildRecord(x){ const f=formDe(x); const c=calc(f); const e=estancia(f.
     comisionista:f.comisionista, proveedor:f.proveedor, categoria:f.categoria, categoria_planilla:CATEGORIA_PLANILLA[f.categoria]||String(f.categoria||'').toUpperCase(), fecha:f.fecha, hora:f.hora, localidad:f.localidad, ubicacion:f.ubicacion, carimbo:f.carimbo, sola_marca:f.sola_marca, raza:f.raza,
     destino:f.destino, destino_codigo:e?e.cod:'', km:num(f.km)||null, km_fuente:f.km_fuente||null, km_detalle:f.km_detalle||null, ruta_km:f.ruta?f.ruta.km:null, retorno_cargado:f.retorno==='si',
     flete:{ transportadora:f.flete.prov==='Otro'?(f.flete.otro||'Otro'):f.flete.prov, otro:f.flete.prov==='Otro', precio_viaje:num(f.flete.precio), viajes:num(f.flete.viajes), cabezas_por_camion:num(f.flete.cab_camion)||null, total:c.flete, sugerencia:sugerenciaFlete(f), contacto:TRANSPORTISTAS[f.flete.prov]||null },
-    precio_modo:f.precio_modo, kg_modo:f.precio_modo==='kg'?(f.kg_modo||'simple'):null, rangos:esRango(f)?(c.rangos?c.rangos.rangos.map(r=>({desde:r.desde, hasta:r.hasta===Infinity?null:r.hasta, precio:r.precio, cabezas:r.cab, kg:+r.kg.toFixed(1), subtotal:Math.round(r.sub)})):[]):null, precio_detalle:esRango(f)&&c.rangos?c.rangos.rangos.map(r=>txtRango(r)+': '+fmt(r.precio)+' Gs/kg ('+r.cab+' cab.)').join(' | '):'', precio:Math.round(c.precio)||num(f.precio), ruta_via:(f.ruta&&f.ruta.via||[]).length, cambio:num(f.cambio)||null, pesos:f.precio_modo==='kg'?f.pesos.slice():[], cabezas:c.cab, pesados:c.pesados, peso_total_kg:+c.pesoRef.toFixed(1), peso_promedio_kg:c.prom?+c.prom.toFixed(1):null, peso_estimado:f.precio_modo==='cabeza'?num(f.peso_est):null,
+    precio_modo:f.precio_modo, kg_modo:f.precio_modo==='kg'?(f.kg_modo||'simple'):null, rangos:esRango(f)?(c.rangos?c.rangos.rangos.map(r=>({desde:r.desde, hasta:r.hasta===Infinity?null:r.hasta, precio:r.precio, cabezas:r.cab, kg:+r.kg.toFixed(1), subtotal:Math.round(r.sub)})):[]):null, precio_detalle:esRango(f)&&c.rangos?c.rangos.rangos.map(r=>txtRango(r)+': '+fmt(r.precio)+' Gs/kg ('+r.cab+' cab.)').join(' | '):'', precio:Math.round(c.precio)||num(f.precio), ruta_via:(f.ruta&&f.ruta.via||[]).length, cambio:num(f.cambio)||null, pesos:f.precio_modo==='kg'?f.pesos.slice():[], ides:(f.precio_modo==='kg'&&(f.ides||[]).some(Boolean))?f.pesos.map((_,i)=>f.ides[i]||''):[], pesaje_modo:f.precio_modo==='kg'?(f.pesaje_modo||'peso'):null, cabezas:c.cab, pesados:c.pesados, peso_total_kg:+c.pesoRef.toFixed(1), peso_promedio_kg:c.prom?+c.prom.toFixed(1):null, peso_estimado:f.precio_modo==='cabeza'?num(f.peso_est):null,
     comision:{ modo:f.com_modo, tasa:num(f.com_tasa), descripcion:comDesc(f), total:Math.round(c.com), iva10:Math.round(c.iva10) },
     totales:{ pagar:Math.round(c.pagar), iva5:Math.round(c.iva5), por_cabeza:Math.round(c.por_animal), por_kg:Math.round(c.por_kg), puesto_total:Math.round(c.puesto), puesto_cabeza:Math.round(c.puesto_cab), puesto_kg:Math.round(c.puesto_kg), usd:c.usd },
     facturacion:fx, observaciones:f.obs||'', documentos:dl, factura_nro:dl.facturas_nro, guias_nro:dl.guias_nro, cotas_nro:dl.cotas_nro, guias:dl.guias.map(g=>({numero:g.numero})),
@@ -1608,7 +1694,7 @@ function resumenWA(r){ const t=r.totales; let s='*ORDEN DE COMPRA DE GANADO — 
   s+=(r.precio_modo==='kg'?'Compra por kg vivo · '+r.pesados+' de '+r.cabezas+' pesados':'Compra por cabeza (punta) · peso estimado')+' · promedio '+(r.peso_promedio_kg!=null?fmt(r.peso_promedio_kg,1):'-')+' kg\n'; if(r.precio) s+=(r.precio_modo==='kg'?'Precio/kg: ':'Precio/cabeza: ')+gs(r.precio)+' · Total: '+gs(t.pagar)+'\nPor cabeza: '+gs(t.por_cabeza)+(t.por_kg?' · Por kg: '+gs(t.por_kg):'')+'\n';
   if(r.comision.total) s+='Comisión ('+r.comision.descripcion+'): '+gs(r.comision.total)+'\n'; if(t.puesto_total) s+='Puesto en estancia: '+gs(t.puesto_total)+' · '+gs(t.puesto_cabeza)+'/cab'+(t.puesto_kg?' · '+gs(t.puesto_kg)+'/kg':'')+'\n'; if(t.usd&&t.usd.total!=null) s+='En US$ (cambio '+fmt(r.cambio)+'): '+usd(t.usd.total)+' · '+usd(t.usd.cab)+'/cab'+(t.usd.kg!=null?' · '+usd(t.usd.kg)+'/kg':'')+'\n';
   const fx=r.facturacion; if(fx){ s+='\n*Cómo facturar:* '+fx.fa.cantidad+' | '+fx.fa.descripcion+' | precio unitario '+gs(fx.fa.unitario)+' | columna 5 %: '+gs(fx.fa.total)+' | IVA 5 %: '+gs(fx.fa.iva5)+'\n'; if(fx.fc) s+='*Cómo facturar la comisión:* '+fx.fc.cantidad+' | '+fx.fc.descripcion+' | precio unitario '+gs(fx.fc.unitario)+' | columna 10 %: '+gs(fx.fc.total)+' | IVA 10 %: '+gs(fx.fc.iva10)+'\n'; }
-  if(r.video&&r.video.url) s+='Video: '+r.video.url+'\n'; if(r.faltantes.length) s+='\n⚠ Faltan: '+r.faltantes.map(x=>x.titulo).join(', ')+'\n'; if(r.observaciones) s+='Obs: '+r.observaciones+'\n'; if(r.pesos.length){ s+='\nPesadas: '+r.pesos.map((p,i)=>(i+1)+') '+fmt(p,1)).join(' · ')+'\n'; } return s; }
+  if(r.video&&r.video.url) s+='Video: '+r.video.url+'\n'; if(r.faltantes.length) s+='\n⚠ Faltan: '+r.faltantes.map(x=>x.titulo).join(', ')+'\n'; if(r.observaciones) s+='Obs: '+r.observaciones+'\n'; if(r.pesos.length){ s+='\nPesadas: '+r.pesos.map((p,i)=>(i+1)+') '+((r.ides&&r.ides[i])?r.ides[i]+' ':'')+fmt(p,1)).join(' · ')+'\n'; } return s; }
 
 /* ---------- pantalla de la orden (resumen) ---------- */
 let doneW=null, doneFiles=null;
@@ -1725,7 +1811,11 @@ async function makePdf(r, x){
   kv('Forma de compra', r.precio_modo==='kg' && r.kg_modo==='rango' ? 'Por kg vivo · por rango de peso' : r.precio_modo==='kg' ? 'Por kg vivo · '+(r.precio?gs(r.precio)+' por kg':'precio —') : 'Por cabeza (punta) · '+(r.precio?gs(r.precio)+' por cabeza':'precio —'));
   if(r.kg_modo==='rango'){ (r.rangos||[]).forEach((g,i)=>kv('Rango '+(i+1), fmt(g.desde,1).replace(/,0$/,'')+' a '+(g.hasta==null?'más':fmt(g.hasta,1).replace(/,0$/,''))+' kg · '+gs(g.precio)+' por kg · '+g.cabezas+' cab. · '+fmt(g.kg,1)+' kg · '+gs(g.subtotal))); }
   title(r.precio_modo==='kg' ? 'Hoja de pesaje (kg) · '+r.pesados+' de '+r.cabezas+' animales pesados' : 'Peso promedio estimado (compra por cabeza)');
-  if(r.pesos.length){ const cols=5, rows=Math.max(8,Math.ceil(r.pesos.length/cols)); const cw=(W-M*2)/cols, rowH=11.5; need(Math.min(rows,12)*rowH+16);
+  if(r.pesos.length&&r.ides&&r.ides.some(Boolean)){ /* v1.7: pesaje SIAP: N° · brinco (IDE) · peso, en 3 bloques */ const cols=3, rows=Math.max(6,Math.ceil(r.pesos.length/cols)); const cw=(W-M*2)/cols, rowH=11.5, wN=cw*.14, wI=cw*.58, wP=cw-wN-wI; need(Math.min(rows,12)*rowH+16);
+    let xx=M; for(let ci=0;ci<cols;ci++){ [['N°',xx,wN],['Brinco (IDE)',xx+wN,wI],['Peso',xx+wN+wI,wP]].forEach(([t,x,w])=>{ page.drawRectangle({x,y:y-rowH+3,width:w,height:rowH,color:brand}); page.drawText(t,{x:x+3,y:y-rowH+6,size:7.2,font:bold,color:rgb(1,1,1)}); }); xx+=cw; } y-=rowH;
+    for(let rr=0;rr<rows;rr++){ need(rowH,'DATOS OPERATIVOS (cont.)'); xx=M; for(let ci=0;ci<cols;ci++){ const idx=ci*rows+rr; page.drawRectangle({x:xx,y:y-rowH+3,width:wN,height:rowH,borderColor:line,borderWidth:.4,color:soft}); page.drawText(String(idx+1),{x:xx+3,y:y-rowH+6,size:7.2,font,color:grey}); page.drawRectangle({x:xx+wN,y:y-rowH+3,width:wI,height:rowH,borderColor:line,borderWidth:.4}); page.drawRectangle({x:xx+wN+wI,y:y-rowH+3,width:wP,height:rowH,borderColor:line,borderWidth:.4});
+      if(r.pesos[idx]!==undefined){ const id=ansi(r.ides[idx]||'—'); page.drawText(id,{x:xx+wN+3,y:y-rowH+6,size:7.4,font,color:ink}); const tt=fmt(r.pesos[idx],1); page.drawText(tt,{x:xx+cw-4-bold.widthOfTextAtSize(tt,8.2),y:y-rowH+6,size:8.2,font:bold,color:ink}); } xx+=cw; } y-=rowH; } y-=8; }
+  else if(r.pesos.length){ const cols=5, rows=Math.max(8,Math.ceil(r.pesos.length/cols)); const cw=(W-M*2)/cols, rowH=11.5; need(Math.min(rows,12)*rowH+16);
     let xx=M; for(let ci=0;ci<cols;ci++){ page.drawRectangle({x:xx,y:y-rowH+3,width:cw*.3,height:rowH,color:brand}); page.drawText('N°',{x:xx+4,y:y-rowH+6,size:7.5,font:bold,color:rgb(1,1,1)}); page.drawRectangle({x:xx+cw*.3,y:y-rowH+3,width:cw*.7,height:rowH,color:brand}); page.drawText('Peso',{x:xx+cw*.3+4,y:y-rowH+6,size:7.5,font:bold,color:rgb(1,1,1)}); xx+=cw; } y-=rowH;
     for(let rr=0;rr<rows;rr++){ need(rowH,'DATOS OPERATIVOS (cont.)'); xx=M; for(let ci=0;ci<cols;ci++){ const idx=ci*rows+rr; page.drawRectangle({x:xx,y:y-rowH+3,width:cw*.3,height:rowH,borderColor:line,borderWidth:.4,color:soft}); page.drawText(String(idx+1),{x:xx+4,y:y-rowH+6,size:7.5,font,color:grey}); page.drawRectangle({x:xx+cw*.3,y:y-rowH+3,width:cw*.7,height:rowH,borderColor:line,borderWidth:.4}); if(r.pesos[idx]!==undefined){ const tt=fmt(r.pesos[idx],1); page.drawText(tt,{x:xx+cw-6-bold.widthOfTextAtSize(tt,8.5),y:y-rowH+6,size:8.5,font:bold,color:ink}); } xx+=cw; } y-=rowH; } y-=8; }
   else if(r.precio_modo!=='kg'){ kv('Peso promedio estimado', r.peso_estimado?fmt(r.peso_estimado,1)+' kg (estimado por el comisionista; no se pesa animal por animal)':'—'); }
