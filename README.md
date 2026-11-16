@@ -1,8 +1,24 @@
-# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 1.7
+# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 1.8
 
 App para que los comisionistas y el director de originación registren cada compra de ganado desde el corral: datos del lote, pesaje animal por animal, foto de los animales carimbados, video opcional, ubicación del corral, distancia por ruta y transportadora sugerida, precio, comisión y liquidación (IVA 5 % y 10 %, dólares, puesto en estancia); en la segunda página la guía, la factura y los datos bancarios, con una verificación automática por IA. Al completar todo, la orden se envía a pago: los administradores reciben un correo con el PDF y un enlace donde autorizan (contado con urgencia o plazo), y el sistema agrega la fila en **COMPRAS DE DESMAMANTES 9**, avisa a Laura para Asana y crea la tarea en Asana.
 
 Está construido sobre el app **Registro de manejo** (misma base: PWA que se agrega a la pantalla de inicio, funciona sin señal, guarda solo cada 2 segundos en el teléfono y copia a la nube cuando hay señal, PIN de 6 números verificado por el servidor, PDF generado en el teléfono con pdf-lib, mapa OpenStreetMap, servidor en Google Apps Script con planilla + Drive + correo).
+
+## Novedades 1.8 (app 1.8.0 · servidor 1.8.0)
+- **Avisos por WhatsApp** desde el número institucional **+595 976 218401 (Ypoti Ganadería)**, por la API oficial de la Meta (WhatsApp Cloud API). Los manda **solo el servidor**, en cuatro momentos del flujo y con modelos fijos aprobados por la Meta:
+
+  | Momento | Modelo | Quién lo recibe (por defecto) |
+  |---|---|---|
+  | El borrador ya tiene proveedor y cabezas (una sola vez por orden) | `oc_borrador_nuevo` | Pedro y Mauricio |
+  | La orden se envía (o se reenvía) a pago | `oc_para_autorizar` · con botón **Abrir y autorizar** | Pedro y Mauricio |
+  | La orden se envía (o se reenvía) a pago | `oc_enviada_comisionista` | el comisionista de la orden |
+  | Autorizada o devuelta | `oc_decision` | administradores (Lucas incluido) y el comisionista |
+
+  Quien hace la acción no recibe su propio aviso. El botón **Abrir y autorizar** abre en el celular la misma página de autorización del correo (`…/exec?oc=<token>`); sigue haciendo falta el PIN, así que un mensaje reenviado no alcanza para autorizar.
+- **Hoja `usuarios`**: los números van en la columna **`telefono`** (0975 123456 o +595 975 123456: el servidor los convierte a 595975123456). Columna nueva **`whatsapp`** (se agrega sola): vacía = avisos por defecto de su rol · `no` = ninguno · o una lista de avisos: `nueva, autorizar, recibida, decision`.
+- **Hoja `whatsapp`** (nueva, en la base): cada aviso con fecha, orden, evento, destinatario, número, modelo, estado (`simulado`, `enviado`, `error`), el `wamid` de la Meta y el error si lo hubo. El mismo aviso no se manda dos veces. Si la Meta da error, la orden sigue su curso: el error queda en la hoja y en el registro de la orden.
+- **En el app**: al enviar a pago, el mensaje dice si salió también el aviso por WhatsApp. En la página de autorización, el resumen final agrega una línea «WhatsApp a …».
+- **Instalación de los avisos**: ver la sección 6.1.
 
 ## Novedades 1.7 (app 1.7.0 · servidor 1.7.0)
 - **Hoja de pesaje en modo «SIAP (HID)»**: además de «Solo peso», el comisionista puede elegir «SIAP (HID)» y cargar **un brinco y un peso, un brinco y un peso**. El brinco entra solo con el bastón Tru-Test en modo HID (funciona como teclado Bluetooth: escribe el número y un Enter); el app pasa al peso, que se escribe con el teclado de números del propio app (así no depende del teclado del celular, que suele esconderse cuando hay un teclado Bluetooth conectado). «✓ Guardar pesada» y el app vuelve a esperar el siguiente brinco.
@@ -228,6 +244,25 @@ Si el token no está cargado, nada falla: Laura recibe el correo y registra a ma
 - **Página de autorización**: PIN de 6 números de Pedro o Mauricio, datos de la orden, controles de la IA, enlaces; **Contado** → urgencia baja/media/alta y "pagar hasta" (opcional); **A plazo (cheque diferido)** → días o fecha; observaciones generales; **Autorizar el pago** o **Devolver con observaciones** (exige observaciones). Si otro administrador ya decidió, la página lo muestra y no deja decidir dos veces. Cada decisión lleva sello con hora y código SHA-256.
 - **En el app**: Pedro y Mauricio ven en la orden los botones **✅ Autorizar pago** y **↩ Devolver**; si la corrigieron (✎ Editar), el botón dice "Guardar cambios y autorizar" y se manda la versión nueva.
 - **Al autorizar**: fila en `BD COMPRAS` (sección 7), tarea en Asana, correo a Laura para Asana, correo con la decisión a todos los administradores (Lucas y Laura incluidos, solo para información) y al comisionista, estado "Pago autorizado" en el app (se actualiza solo cada 5 minutos o con "Consultar estado").
+
+
+### 6.1 · Avisos por WhatsApp (servidor 1.8)
+
+El token de WhatsApp da control total del número: **va solo en las Propiedades del script**, nunca en el código, en GitHub ni en un chat. Lo pega Lucas.
+
+1. **Actualizar el servidor**: pegar `servidor_compras.gs` 1.8.0 y publicar una **nueva versión** en la implementación existente (Implementar › Gestionar implementaciones › ✎ › Versión: Nueva versión). La URL no cambia.
+2. **Propiedades del script** (Configuración del proyecto › Propiedades del script):
+   - `WHATSAPP_TOKEN` = el token permanente del usuario del sistema `whatsapp-api` (el mismo de la guía de WhatsApp de la Ypoti).
+   - `WHATSAPP_PRUEBA` = el número de Lucas (para la primera prueba: **todos** los avisos van solo a ese número).
+   - `WHATSAPP_ACTIVO` todavía **no**: mientras no esté en `si`, el servidor solo anota en la hoja `whatsapp` lo que habría mandado (estado `simulado`).
+3. **Crear los modelos**: en el editor, elegir la función `crearModelosWhatsApp` › Ejecutar (la primera vez pide permiso para conectarse a servicios externos). Crea los 4 modelos (categoría *Utilidad*, español). La Meta los revisa en minutos u horas; `estadoModelosWhatsApp` muestra si ya están `APPROVED`. Si alguno vuelve `REJECTED`, ajustar el texto en `servidor_compras.gs` (función `crearModelosWhatsApp`) y volver a ejecutar.
+4. **Teléfonos**: completar la columna `telefono` de la hoja `usuarios` (Pedro, Mauricio, Lucas, Laura y los comisionistas que quieran recibir avisos). `destinatariosWhatsApp` muestra quién recibe cada aviso, sin mandar nada.
+5. **Probar**: con los modelos aprobados, `probarWhatsApp` manda a `WHATSAPP_PRUEBA` el pedido de autorización de la última orden enviada a pago, con el botón. Tocar el botón y comprobar que abre la página de autorización (ejecutado desde el editor, el enlace puede salir con `/dev` en vez de `/exec`; en los avisos reales sale siempre la URL publicada).
+6. **Prueba con el flujo real**: `WHATSAPP_ACTIVO` = `si` (con `WHATSAPP_PRUEBA` todavía puesto) y enviar una orden de prueba: llegan los avisos a Lucas, y la hoja `whatsapp` muestra para quién eran.
+7. **Encender**: borrar `WHATSAPP_PRUEBA`. Desde ese momento los avisos van a cada persona.
+8. **Antes de agregar a alguien**: confirmar que acepta recibir avisos de la Ypoti por WhatsApp. Si alguien responde **BAJA**, poner `no` en su columna `whatsapp`. Para apagar todo: `WHATSAPP_ACTIVO` = `no`.
+
+Errores frecuentes (columna `error` de la hoja `whatsapp`): **131026** el número no tiene WhatsApp o está mal escrito · **132001** el modelo todavía no está aprobado o tiene otro nombre/idioma · **132000** cantidad de variables distinta del modelo · **131047** fuera de la ventana de 24 h sin modelo (no debería pasar: todo sale con modelo) · **190** token vencido o inválido (pedir a Lucas) · **131056 / 130429** demasiados mensajes seguidos.
 
 ---
 

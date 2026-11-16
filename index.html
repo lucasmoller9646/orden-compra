@@ -1012,7 +1012,7 @@ const LOGO_PDF_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAaIAAAB4CAYAAACw2faSAACLZklEQVR42u
    Construido sobre el app "Registro de manejo" (misma base: PWA sin conexión, IndexedDB + autoguardado,
    copia en la nube, contraseñas de 4 números verificadas por el servidor, PDF con pdf-lib, mapa OSM).
    ===================================================================================================== */
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.8.0';
 const ESQUEMA = 'compras-ypoti/1';
 const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzpJMDSnuFe7jQjVYM7pqa-Q1Jnydm21VRosUvgcLKhAv8DFrDMRrV5ih-A9sLAhXX0Tg/exec'; // URL /exec del servidor (Apps Script) · ver README
 const EMPRESA = { razon_social:'RURAL BIOENERGIA S.A.', ruc:'80050418-6', ruc_base:'80050418' };
@@ -1914,7 +1914,7 @@ async function enviarPagoCore(x){ const msg=$('done-msg'); const r=buildRecord(x
     if(!servidorDesde('1.5.4')) payload.fotos={ facturas:f.docs.facturas.map(d=>d.foto), guias:f.docs.guias.map(d=>d.foto), cotas:f.docs.cotas.map(d=>d.foto) }; /* servidor viejo: las fotos van aparte (duplicadas) */
     const j=await postEnvioConfirmado(x.id, payload, msg);
     await enCola(async()=>{ const x2=await dbGet(x.id); if(!x2) return; x2.pago=Object.assign({},x2.pago||{},{enviado_en:j.enviado_en||new Date().toISOString(), enviado_por:sesion.nombre, token:j.token||(x2.pago&&x2.pago.token)||null, decision:null, justificacion_ia:justificacion||null}); x2.version=(x2.version||1); logEntry(x2,'enviada a pago',(j.confirmado_por_consulta?'confirmada por consulta al servidor · ':'')+'correo a '+(j.destinatarios||'administradores')); x2.nube=Object.assign({},x2.nube||{},{pendiente:true}); await dbPut(x2); doneW=x2; });
-    const x3=await dbGet(x.id); msg.className='msg ok'; msg.textContent='Enviada: '+(j.destinatarios||'los administradores')+' recibieron el correo con el PDF y el enlace para autorizar el pago.'; renderDoneStatus(x3); renderPagoPanel(x3); $('btn-enviar-pago').innerHTML='📤 Reenviar a pago (actualizada)<span class="sub" id="pago-sub">Ya enviada · reenvíe solo si la modificó</span>'; programarSubida(2000); renderHome(); }
+    const x3=await dbGet(x.id); msg.className='msg ok'; msg.textContent='Enviada: '+(j.destinatarios||'los administradores')+' recibieron el correo con el PDF y el enlace para autorizar el pago'+(j.whatsapp&&j.whatsapp.length?', y el aviso por WhatsApp con el mismo enlace.':'.'); renderDoneStatus(x3); renderPagoPanel(x3); $('btn-enviar-pago').innerHTML='📤 Reenviar a pago (actualizada)<span class="sub" id="pago-sub">Ya enviada · reenvíe solo si la modificó</span>'; programarSubida(2000); renderHome(); }
   catch(e){ msg.className='msg bad'; msg.textContent='No se pudo enviar: '+textoErrorRed(e)+'. La orden quedó guardada: revise la señal y vuelva a intentar. Si no sale, pruebe desde el celular o con Wi‑Fi.'; }
   finally{ $('btn-enviar-pago').disabled=false; soltarWakeLock(wl); } }
 /* v1.5.4: envío robusto. El servidor hace mucho trabajo en una sola llamada (Drive, planilla, correo con adjunto) y Safari (iPhone/iPad)
