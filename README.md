@@ -1,8 +1,16 @@
-# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 1.8
+# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 1.8.1
 
 App para que los comisionistas y el director de originación registren cada compra de ganado desde el corral: datos del lote, pesaje animal por animal, foto de los animales carimbados, video opcional, ubicación del corral, distancia por ruta y transportadora sugerida, precio, comisión y liquidación (IVA 5 % y 10 %, dólares, puesto en estancia); en la segunda página la guía, la factura y los datos bancarios, con una verificación automática por IA. Al completar todo, la orden se envía a pago: los administradores reciben un correo con el PDF y un enlace donde autorizan (contado con urgencia o plazo), y el sistema agrega la fila en **COMPRAS DE DESMAMANTES 9**, avisa a Laura para Asana y crea la tarea en Asana.
 
 Está construido sobre el app **Registro de manejo** (misma base: PWA que se agrega a la pantalla de inicio, funciona sin señal, guarda solo cada 2 segundos en el teléfono y copia a la nube cuando hay señal, PIN de 6 números verificado por el servidor, PDF generado en el teléfono con pdf-lib, mapa OpenStreetMap, servidor en Google Apps Script con planilla + Drive + correo).
+
+## Novedades 1.8.1 (servidor 1.8.1 · página `autorizar.html`)
+- La Meta **rechazó** la primera versión del modelo `oc_para_autorizar` (los otros tres quedaron en revisión). Cambios para volver a presentarlo:
+  - el botón ya no apunta a `script.google.com`, sino a una página del propio app, `https://lucasmoller9646.github.io/orden-compra/autorizar.html?oc=<token>`, que redirige a la página de autorización del servidor; la variable del botón es solo el código de la orden;
+  - el texto ya no menciona el PIN (la página lo sigue pidiendo igual) y el botón dice **Revisar la orden**.
+- `estadoModelosWhatsApp` ahora muestra el **motivo del rechazo** y el id de cada modelo.
+- Función nueva **`corregirModelosRechazadosWhatsApp`**: edita en la Meta solo los modelos en `REJECTED` con el texto actual y los manda de nuevo a revisión (mismo nombre; los `PENDING` o `APPROVED` no se tocan).
+- Si la implementación del servidor cambia de URL, actualizar `DEFAULT_ENDPOINT` del app y volver a generar `autorizar.html` (la toma de ahí).
 
 ## Novedades 1.8 (app 1.8.0 · servidor 1.8.0)
 - **Avisos por WhatsApp** desde el número institucional **+595 976 218401 (Ypoti Ganadería)**, por la API oficial de la Meta (WhatsApp Cloud API). Los manda **solo el servidor**, en cuatro momentos del flujo y con modelos fijos aprobados por la Meta:
@@ -10,11 +18,11 @@ Está construido sobre el app **Registro de manejo** (misma base: PWA que se agr
   | Momento | Modelo | Quién lo recibe (por defecto) |
   |---|---|---|
   | El borrador ya tiene proveedor y cabezas (una sola vez por orden) | `oc_borrador_nuevo` | Pedro y Mauricio |
-  | La orden se envía (o se reenvía) a pago | `oc_para_autorizar` · con botón **Abrir y autorizar** | Pedro y Mauricio |
+  | La orden se envía (o se reenvía) a pago | `oc_para_autorizar` · con botón **Revisar la orden** | Pedro y Mauricio |
   | La orden se envía (o se reenvía) a pago | `oc_enviada_comisionista` | el comisionista de la orden |
   | Autorizada o devuelta | `oc_decision` | administradores (Lucas incluido) y el comisionista |
 
-  Quien hace la acción no recibe su propio aviso. El botón **Abrir y autorizar** abre en el celular la misma página de autorización del correo (`…/exec?oc=<token>`); sigue haciendo falta el PIN, así que un mensaje reenviado no alcanza para autorizar.
+  Quien hace la acción no recibe su propio aviso. El botón **Revisar la orden** abre `autorizar.html?oc=<token>` en el dominio del app (GitHub Pages), que pasa enseguida a la misma página de autorización del correo (`…/exec?oc=<token>`); sigue haciendo falta el PIN, así que un mensaje reenviado no alcanza para autorizar.
 - **Hoja `usuarios`**: los números van en la columna **`telefono`** (0975 123456 o +595 975 123456: el servidor los convierte a 595975123456). Columna nueva **`whatsapp`** (se agrega sola): vacía = avisos por defecto de su rol · `no` = ninguno · o una lista de avisos: `nueva, autorizar, recibida, decision`.
 - **Hoja `whatsapp`** (nueva, en la base): cada aviso con fecha, orden, evento, destinatario, número, modelo, estado (`simulado`, `enviado`, `error`), el `wamid` de la Meta y el error si lo hubo. El mismo aviso no se manda dos veces. Si la Meta da error, la orden sigue su curso: el error queda en la hoja y en el registro de la orden.
 - **En el app**: al enviar a pago, el mensaje dice si salió también el aviso por WhatsApp. En la página de autorización, el resumen final agrega una línea «WhatsApp a …».
@@ -255,7 +263,7 @@ El token de WhatsApp da control total del número: **va solo en las Propiedades 
    - `WHATSAPP_TOKEN` = el token permanente del usuario del sistema `whatsapp-api` (el mismo de la guía de WhatsApp de la Ypoti).
    - `WHATSAPP_PRUEBA` = el número de Lucas (para la primera prueba: **todos** los avisos van solo a ese número).
    - `WHATSAPP_ACTIVO` todavía **no**: mientras no esté en `si`, el servidor solo anota en la hoja `whatsapp` lo que habría mandado (estado `simulado`).
-3. **Crear los modelos**: en el editor, elegir la función `crearModelosWhatsApp` › Ejecutar (la primera vez pide permiso para conectarse a servicios externos). Crea los 4 modelos (categoría *Utilidad*, español). La Meta los revisa en minutos u horas; `estadoModelosWhatsApp` muestra si ya están `APPROVED`. Si alguno vuelve `REJECTED`, ajustar el texto en `servidor_compras.gs` (función `crearModelosWhatsApp`) y volver a ejecutar.
+3. **Crear los modelos**: en el editor, elegir la función `crearModelosWhatsApp` › Ejecutar (la primera vez pide permiso para conectarse a servicios externos). Crea los 4 modelos (categoría *Utilidad*, español). La Meta los revisa en minutos u horas; `estadoModelosWhatsApp` muestra si ya están `APPROVED`. Si alguno vuelve `REJECTED`, `estadoModelosWhatsApp` muestra el motivo; ajustar el texto en `servidor_compras.gs` (función `modelosWhatsApp_`) y ejecutar `corregirModelosRechazadosWhatsApp`, que edita el modelo rechazado sin cambiar el nombre.
 4. **Teléfonos**: completar la columna `telefono` de la hoja `usuarios` (Pedro, Mauricio, Lucas, Laura y los comisionistas que quieran recibir avisos). `destinatariosWhatsApp` muestra quién recibe cada aviso, sin mandar nada.
 5. **Probar**: con los modelos aprobados, `probarWhatsApp` manda a `WHATSAPP_PRUEBA` el pedido de autorización de la última orden enviada a pago, con el botón. Tocar el botón y comprobar que abre la página de autorización (ejecutado desde el editor, el enlace puede salir con `/dev` en vez de `/exec`; en los avisos reales sale siempre la URL publicada).
 6. **Prueba con el flujo real**: `WHATSAPP_ACTIVO` = `si` (con `WHATSAPP_PRUEBA` todavía puesto) y enviar una orden de prueba: llegan los avisos a Lucas, y la hoja `whatsapp` muestra para quién eran.
