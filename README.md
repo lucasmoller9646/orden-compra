@@ -10,7 +10,7 @@ Está construido sobre el app **Registro de manejo** (misma base: PWA que se agr
 - **Regla**: solo escribe en la base de **prueba PRUEBAS_RURAL_10**. Para escribir en RURALBIOENERGIA hacen falta `SAP_EMPRESA = RURALBIOENERGIA` **y** `SAP_PRODUCCION = si`.
 - **No repite**: guarda los DocEntry en la orden (`sap_borradores`) y antes de crear busca en los borradores del SAP el mismo proveedor y número. Si el SAP falla, la autorización sigue igual y el error queda en la orden (`sap_estado`, `sap_error`), en el registro y en el resumen de la página.
 - **Instalación**:
-  1. Propiedades del script: `SAP_CLAVE` (clave del usuario manager de la base de prueba). Opcionales: `SAP_URL` (por defecto https://188.34.132.252:50000/b1s/v1), `SAP_EMPRESA` (PRUEBAS_RURAL_10), `SAP_USUARIO` (manager).
+  1. Propiedades del script: `SAP_CLAVE` (clave del usuario manager de la base de prueba). Opcionales: `SAP_URL` (por defecto la del Service Layer de la empresa, la misma del app Integração Ypoti), `SAP_EMPRESA` (PRUEBAS_RURAL_10), `SAP_USUARIO` (manager).
   2. Ejecutar **`sapProbarConexion`** (solo lectura).
   3. Ejecutar **`sapExplorar`**: lee las facturas de ganado ya cargadas en la base y guarda en la carpeta del app «sap_modelo_facturas_ganado.json» (3 ejemplos completos, cuentas, IVA, centros y campos U_ que usa la contabilidad). Con eso se completa **`SAP_MAPA`** (JSON con tipo servicio/artículo, cuentas o artículos por categoría, código de IVA, centros por destino, campos fijos de cabecera y `listo: true`).
   4. `SAP_ACTIVO = si`. Desde ahí, cada autorización crea el borrador. `sapBorradorOrdenAhora` (propiedad `SAP_ORDEN`) lo hace para una orden ya autorizada y `sapReintentarPendientes` reintenta los errores de los últimos 30 días.
