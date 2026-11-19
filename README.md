@@ -1,8 +1,19 @@
-# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 2.1
+# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 2.2
 
 App para que los comisionistas y el director de originación registren cada compra de ganado desde el corral: datos del lote, pesaje animal por animal, foto de los animales carimbados, video opcional, ubicación del corral, distancia por ruta y transportadora sugerida, precio, comisión y liquidación (IVA 5 % y 10 %, dólares, puesto en estancia); en la segunda página la guía, la factura y los datos bancarios, con una verificación automática por IA. Al completar todo, la orden se envía a pago: los administradores reciben un correo con el PDF y un enlace donde autorizan (contado con urgencia o plazo), y el sistema agrega la fila en **COMPRAS DE DESMAMANTES 9**, avisa a Laura para Asana y crea la tarea en Asana.
 
 Está construido sobre el app **Registro de manejo** (misma base: PWA que se agrega a la pantalla de inicio, funciona sin señal, guarda solo cada 2 segundos en el teléfono y copia a la nube cuando hay señal, PIN de 6 números verificado por el servidor, PDF generado en el teléfono con pdf-lib, mapa OpenStreetMap, servidor en Google Apps Script con planilla + Drive + correo).
+
+## Novedades 2.2 (servidor 2.2.0) · Borrador de la factura de compra en el SAP
+- Al **autorizar** la orden, además de la planilla y Asana, el servidor entra en el **SAP Business One por el Service Layer** (dirección pública, certificado autoasignado) y crea un **borrador de factura de proveedor** (Drafts · `oPurchaseInvoices`) por cada factura del proveedor. La contabilidad lo revisa y lo confirma en el SAP; el app **nunca crea la factura definitiva**.
+- **Qué lleva**: proveedor buscado por **RUC** (FederalTaxID) · fecha de la factura (DocDate/TaxDate) · vencimiento = «pagar hasta» de la autorización · número (NumAtCard) con establecimiento y punto de expedición en `U_ESTA` / `U_PEMI` y timbrado en `U_TIMB` · una línea con la cuenta (o el artículo) de la categoría, el **neto sin IVA 5 %** (total − total ÷ 21), el código de IVA y el centro de costo del destino · comentario con el id de la orden, quién autorizó, forma de pago, guías y COTAs.
+- **Regla**: solo escribe en la base de **prueba PRUEBAS_RURAL_10**. Para escribir en RURALBIOENERGIA hacen falta `SAP_EMPRESA = RURALBIOENERGIA` **y** `SAP_PRODUCCION = si`.
+- **No repite**: guarda los DocEntry en la orden (`sap_borradores`) y antes de crear busca en los borradores del SAP el mismo proveedor y número. Si el SAP falla, la autorización sigue igual y el error queda en la orden (`sap_estado`, `sap_error`), en el registro y en el resumen de la página.
+- **Instalación**:
+  1. Propiedades del script: `SAP_CLAVE` (clave del usuario manager de la base de prueba). Opcionales: `SAP_URL` (por defecto https://188.34.132.252:50000/b1s/v1), `SAP_EMPRESA` (PRUEBAS_RURAL_10), `SAP_USUARIO` (manager).
+  2. Ejecutar **`sapProbarConexion`** (solo lectura).
+  3. Ejecutar **`sapExplorar`**: lee las facturas de ganado ya cargadas en la base y guarda en la carpeta del app «sap_modelo_facturas_ganado.json» (3 ejemplos completos, cuentas, IVA, centros y campos U_ que usa la contabilidad). Con eso se completa **`SAP_MAPA`** (JSON con tipo servicio/artículo, cuentas o artículos por categoría, código de IVA, centros por destino, campos fijos de cabecera y `listo: true`).
+  4. `SAP_ACTIVO = si`. Desde ahí, cada autorización crea el borrador. `sapBorradorOrdenAhora` (propiedad `SAP_ORDEN`) lo hace para una orden ya autorizada y `sapReintentarPendientes` reintenta los errores de los últimos 30 días.
 
 ## Novedades 2.1 (app 2.1.0 · servidor 2.1.0) · Historial de proveedores e intermediarios
 Responde a los pedidos del Registro de manejo (documento «integración Registro de manejo ↔ Orden de compra»), con la hoja `llegadas` (cabezas, pesos y muertes de los primeros 60 días, que el Registro de manejo recalcula cada 15 minutos durante 120 días) y la hoja `cierres`.
