@@ -77,7 +77,7 @@ Integración con el **Registro de manejo** (app de trazabilidad, servidor 4.13 o
   | Autorizada o devuelta | `oc_decision` | administradores (Lucas incluido) y el comisionista |
 
   Quien hace la acción no recibe su propio aviso. El botón **Revisar la orden** abre `autorizar.html?oc=<token>` en el dominio del app (GitHub Pages), que pasa enseguida a la misma página de autorización del correo (`…/exec?oc=<token>`); sigue haciendo falta el PIN, así que un mensaje reenviado no alcanza para autorizar.
-- **Hoja `usuarios`**: los números van en la columna **`telefono`** (0975 123456 o +595 975 123456: el servidor los convierte a 595975123456). Columna nueva **`whatsapp`** (se agrega sola): vacía = avisos por defecto de su rol · `no` = ninguno · o una lista de avisos: `nueva, autorizar, recibida, decision`.
+- **Hoja `usuarios`**: los números van en la columna **`telefono`** (0975 123456 o +595 975 123456: el servidor los convierte a 595975123456; desde el servidor 2.1.1 también sirve 975123456, cuando la planilla borra el 0 inicial). Columna nueva **`whatsapp`** (se agrega sola): vacía = avisos por defecto de su rol · `no` = ninguno · o una lista de avisos: `nueva, autorizar, recibida, decision`.
 - **Hoja `whatsapp`** (nueva, en la base): cada aviso con fecha, orden, evento, destinatario, número, modelo, estado (`simulado`, `enviado`, `error`), el `wamid` de la Meta y el error si lo hubo. El mismo aviso no se manda dos veces. Si la Meta da error, la orden sigue su curso: el error queda en la hoja y en el registro de la orden.
 - **En el app**: al enviar a pago, el mensaje dice si salió también el aviso por WhatsApp. En la página de autorización, el resumen final agrega una línea «WhatsApp a …».
 - **Instalación de los avisos**: ver la sección 6.1.
