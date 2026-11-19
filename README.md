@@ -1,8 +1,42 @@
-# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 1.9
+# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 2.0
 
 App para que los comisionistas y el director de originación registren cada compra de ganado desde el corral: datos del lote, pesaje animal por animal, foto de los animales carimbados, video opcional, ubicación del corral, distancia por ruta y transportadora sugerida, precio, comisión y liquidación (IVA 5 % y 10 %, dólares, puesto en estancia); en la segunda página la guía, la factura y los datos bancarios, con una verificación automática por IA. Al completar todo, la orden se envía a pago: los administradores reciben un correo con el PDF y un enlace donde autorizan (contado con urgencia o plazo), y el sistema agrega la fila en **COMPRAS DE DESMAMANTES 9**, avisa a Laura para Asana y crea la tarea en Asana.
 
 Está construido sobre el app **Registro de manejo** (misma base: PWA que se agrega a la pantalla de inicio, funciona sin señal, guarda solo cada 2 segundos en el teléfono y copia a la nube cuando hay señal, PIN de 6 números verificado por el servidor, PDF generado en el teléfono con pdf-lib, mapa OpenStreetMap, servidor en Google Apps Script con planilla + Drive + correo).
+
+## Novedades 2.0 (app 2.0.0 · servidor 2.0.0) · Cierre de compra a la llegada
+Integración con el **Registro de manejo** (app de trazabilidad, servidor 4.13 o posterior), que ya escribe en esta base la hoja **`llegadas`** (una fila por entrada vinculada a una orden) y completa K y W de BD COMPRAS.
+
+- **Cada hora** (`procesarLlegadas`, se instala con `instalarCierreAutomatico`) el servidor junta las llegadas de cada orden **autorizada** y la **cierra** cuando llegaron todas las cabezas o pasaron **72 h** desde la primera llegada (sin peso de llegada espera hasta 7 días). Si después el capataz corrige la llegada, se genera la versión 2 del cierre y se avisa de nuevo; si no cambió nada, no repite.
+- **Planilla BD COMPRAS**: K (fecha de llegada) y W (peso de báscula) solo si siguen vacías (el Registro de manejo ya las llena), **L = ENTREGUE** y columnas nuevas al final: `CABEZAS LLEGADAS (LOTE)`, `QUEBRA ESPERADA %`, `QUEBRA IC95 %`, `ALERTA QUEBRA` (OK / REVISAR / POSIBLE FRAUDE), `FECHA CIERRE`, `URL CIERRE`.
+- **Registro en la compra**: hoja nueva **`cierres`** (una fila por cierre: llegada, quiebra real, esperada, desvío, intervalo, z, alertas, brincos fuera de rango, que no llegaron o que no estaban en la compra, costo puesto) y columnas nuevas en `ordenes` (`cierre_en`, `cierre_pdf`, `cierre_alerta`, `cabezas_llegadas`, `peso_llegada_kg`, `quiebre_real_pct`, `quiebre_esperado_pct`, `quiebre_sd_pct`…). En el app, el panel de pago muestra «🏁 Compra cerrada…» y el botón **PDF del cierre de compra**.
+- **PDF «Cierre de compra»** (en la carpeta de la orden y por correo **a Pedro**, `CIERRE.PARA`): 1) la orden aceptada (quién autorizó, forma de pago, sello); 2) la llegada (estancia, fecha, camiones, cabezas compradas × llegadas, pesos, muertes de los primeros 60 días); 3) **quiebra esperada vs. real**: media, desvío estándar, rango de 1 desvío (68 %), intervalo del 95 % y z; 4) **histograma de quiebra por cabeza** con la banda esperada (verde 1 desvío, amarillo 95 %, rojo fuera); 5) **costo puesto en la estancia** (por cabeza y por kg: compra, esperado y real; costo de la quiebra; en ₲ y US$); 6) **alertas**.
+- **Quiebra por cabeza**: pesos de compra de la hoja `pesos` (con brinco si se pesó en modo SIAP) contra los pesos individuales de la llegada (hoja `ids_individuales` del Registro de manejo). Con brincos en los dos lados se empareja **por brinco**; si la compra no tiene brincos, **por orden de peso** (muestra la distribución, no señala animales).
+- **Posibles fraudes (fuera del 95 %)**: quiebra del lote por encima del intervalo (peso de compra inflado, animales cambiados, pesaje de llegada) o por debajo (pesajes a revisar); **brincos que llegaron y no estaban en la compra** (posible cambio de animales); brincos comprados que no aparecen; cabezas faltantes; más del 10 % de los animales fuera del 95 % por cabeza (por azar se espera ~5 %). El asunto del correo empieza con «⚠ POSIBLE FRAUDE» cuando hay alguna alerta alta.
+
+### El estudio de la quiebra esperada (prior)
+- **Modelo**: quiebra % = constante + km (hasta 150 km y después de 150) + peso de compra + categoría (desmamante u otra) + días entre la compra y el pesaje de llegada + **raza** (efecto encogido hacia 0 hasta tener lotes suficientes). Se ajusta por mínimos cuadrados con las filas de BD COMPRAS que tienen peso de compra (U), peso de báscula (W) distinto y km (AZ), descartando errores groseros (más de 3,5 desvíos robustos de la mediana).
+- **Guardado en el servidor**: hoja **`estudio_quiebra`** de la base y propiedad `ESTUDIO_QUIEBRA`. No se recalcula en cada cierre: se rehace solo cuando tiene más de 30 días o al ejecutar **`actualizarEstudioQuiebra`**; `verEstudioQuiebra` muestra los coeficientes y un ejemplo.
+- **Resultado con la planilla histórica (copia del 22/10/2026)**: 1358 lotes con peso de llegada y km, 1337 usados. Desvío estándar del lote **σ = 6,8 pp**; R² = 6 %. Ejemplo: 300 km, 180 kg, desmamante, pesado al día siguiente → **9,9 % ± 6,8** (95 %: −3,5 % a 23,2 %).
+
+  | Coeficiente | Valor (pp) | Error estándar |
+  |---|---|---|
+  | constante | 4,16 | 1,06 |
+  | km hasta 150 (por 100 km) | +4,26 | 0,86 |
+  | km después de 150 (por 100 km) | −0,11 | 0,15 |
+  | peso de compra (por 100 kg sobre 200) | +0,65 | 0,64 |
+  | categoría no desmamante | −3,08 | 1,05 |
+  | días hasta el pesaje (por 10 días) | −3,62 | 0,61 |
+
+  Lectura: la quiebra sube con los primeros 150 km y después casi no cambia; el peso no tiene efecto claro; los animales pesados varios días después de llegar recuperan parte. La distancia, el peso y la categoría explican poco: la mayor parte de la variación es propia de cada viaje, por eso el intervalo del 95 % es ancho y solo marca los lotes muy fuera de lo normal. La **raza** todavía no tiene historia en la planilla (la columna RAZA existe solo desde el app), así que su efecto empieza en 0 y se va estimando con los cierres.
+- **Desvío por cabeza**: σ por cabeza = √(σ del lote² + σ dentro del lote²). El de dentro del lote se toma de los cierres anteriores emparejados por brinco (hoja `cierres`); mientras no haya 3, se usa el desvío robusto del propio lote.
+
+### Instalación (una vez)
+1. Pegar `servidor_compras.gs` 2.0.0 y publicar una **Nueva versión** de la implementación existente.
+2. Ejecutar **`instalarCierreAutomatico`** (pide permiso para activadores; crea el activador de cada hora y calcula el estudio con la planilla de producción).
+3. Ver el estudio en la hoja `estudio_quiebra` (o ejecutar `verEstudioQuiebra`).
+4. Para cerrar una orden a mano (sin esperar 72 h): poner su id en Propiedades del script › `CERRAR_ORDEN` y ejecutar **`cerrarOrdenAhora`**.
+5. La base del Registro de manejo se busca por nombre en su carpeta; si se mueve, poner su id en la propiedad `MANEJO_BASE_ID`.
 
 ## Novedades 1.9 (app 1.9.0 · servidor 1.9.0) · Lista negra de proveedores
 - **Hoja `lista_negra`** (nueva, en la base, se crea sola): `proveedor`, `ruc`, `otros_nombres`, `motivo`, `activo`, `agregado_por`, `agregado_en`, `quitado_por`, `quitado_en`.
