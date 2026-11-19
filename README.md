@@ -1,8 +1,19 @@
-# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 1.8.1
+# Orden de compra de ganado · Grupo Ypoti / Rural Bioenergía S.A. — versión 1.9
 
 App para que los comisionistas y el director de originación registren cada compra de ganado desde el corral: datos del lote, pesaje animal por animal, foto de los animales carimbados, video opcional, ubicación del corral, distancia por ruta y transportadora sugerida, precio, comisión y liquidación (IVA 5 % y 10 %, dólares, puesto en estancia); en la segunda página la guía, la factura y los datos bancarios, con una verificación automática por IA. Al completar todo, la orden se envía a pago: los administradores reciben un correo con el PDF y un enlace donde autorizan (contado con urgencia o plazo), y el sistema agrega la fila en **COMPRAS DE DESMAMANTES 9**, avisa a Laura para Asana y crea la tarea en Asana.
 
 Está construido sobre el app **Registro de manejo** (misma base: PWA que se agrega a la pantalla de inicio, funciona sin señal, guarda solo cada 2 segundos en el teléfono y copia a la nube cuando hay señal, PIN de 6 números verificado por el servidor, PDF generado en el teléfono con pdf-lib, mapa OpenStreetMap, servidor en Google Apps Script con planilla + Drive + correo).
+
+## Novedades 1.9 (app 1.9.0 · servidor 1.9.0) · Lista negra de proveedores
+- **Hoja `lista_negra`** (nueva, en la base, se crea sola): `proveedor`, `ruc`, `otros_nombres`, `motivo`, `activo`, `agregado_por`, `agregado_en`, `quitado_por`, `quitado_en`.
+- **La gestiona Pedro** (`CONFIG.LISTA_NEGRA_GESTIONA`) en la página **`…/exec?lista=1`**, con su PIN: agregar (nombre o razón social, RUC/CI opcional, otros nombres separados por `;` y el motivo obligatorio), editar, quitar y volver a poner. Los otros administradores la ven en solo lectura; los comisionistas no la ven. En el app, los administradores tienen el botón **⛔ Lista negra de proveedores** en la pantalla inicial.
+- **Con qué se compara**: el proveedor cargado en el app y, cuando la IA ya leyó los documentos, el emisor de cada factura, el vendedor de cada guía y el propietario de cada COTA. Coincide por **RUC/CI** (mismo número base) o por **nombre** (todas las palabras del nombre de la lista aparecen en el de la orden, sin contar S.A., Estancia, Ganadera…; se tolera una letra distinta en palabras de 5 letras o más).
+- **El aviso a quien autoriza**:
+  - el correo «para autorizar» llega con el asunto `⛔ LISTA NEGRA · …` y un cuadro rojo con el proveedor, el motivo, quién lo agregó y dónde coincide;
+  - la página de autorización muestra el mismo cuadro rojo arriba (y vibra en el celular), el botón pasa a **⚠ Autorizar igual (lista negra)** y pide una confirmación aparte;
+  - el servidor no autoriza sin esa confirmación.
+- **Registro**: columna `lista_negra` de la orden (`AUTORIZADA CON AVISO · …` o `DEVUELTA · …`), log de la orden, resumen final de la página y correo de la decisión (fila «⛔ Lista negra»).
+- Los avisos por WhatsApp no cambian (los modelos son fijos y aprobados por la Meta): el aviso de lista negra va en el correo y en la página, que es donde se autoriza.
 
 ## Novedades 1.8.1 (servidor 1.8.1 · página `autorizar.html`)
 - La Meta **rechazó** la primera versión del modelo `oc_para_autorizar` (los otros tres quedaron en revisión). Cambios para volver a presentarlo:

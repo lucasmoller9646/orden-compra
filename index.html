@@ -595,6 +595,7 @@ input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and
   <section class="screen" id="scr-home">
     <div class="stack">
       <button class="btn primary big" id="btn-new">＋ Nueva orden de compra</button>
+      <a class="btn hidden" id="btn-lista-negra" target="_blank" rel="noopener" style="text-align:center">⛔ Lista negra de proveedores</a>
       <div class="sync-bar"><div><b id="home-list-title">Órdenes</b><span id="sync-info">Sin actualizar todavía</span></div><button class="btn" type="button" id="btn-sync">⟳ Actualizar</button></div>
       <div id="pend-msg" class="msg warn hidden"></div>
       <div class="list" id="home-list"></div>
@@ -1012,7 +1013,7 @@ const LOGO_PDF_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAaIAAAB4CAYAAACw2faSAACLZklEQVR42u
    Construido sobre el app "Registro de manejo" (misma base: PWA sin conexión, IndexedDB + autoguardado,
    copia en la nube, contraseñas de 4 números verificadas por el servidor, PDF con pdf-lib, mapa OSM).
    ===================================================================================================== */
-const APP_VERSION = '1.8.0';
+const APP_VERSION = '1.9.0';
 const ESQUEMA = 'compras-ypoti/1';
 const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzpJMDSnuFe7jQjVYM7pqa-Q1Jnydm21VRosUvgcLKhAv8DFrDMRrV5ih-A9sLAhXX0Tg/exec'; // URL /exec del servidor (Apps Script) · ver README
 const EMPRESA = { razon_social:'RURAL BIOENERGIA S.A.', ruc:'80050418-6', ruc_base:'80050418' };
@@ -1756,7 +1757,7 @@ function itemOrden(x){ if(x.stub) return itemStub(x); const b=document.createEle
   b.querySelector('b').textContent=(f.proveedor||'Sin proveedor')+(f.categoria?' · '+f.categoria:''); b.querySelector('.main span').textContent=fmtDate(f.fecha)+' · '+c.cab+' cab.'+(c.ok?' · '+gs(c.pagar):'')+(f.destino?' → '+f.destino:''); b.querySelector('.l2').textContent=(f.comisionista||x.creado_por||'')+' · guardada '+fmtDT(x.actualizado_en||x.creado_en);
   const [c1,t1]=badgeEstado(x), [c2,t2]=badgeIA(x); const bd=b.querySelectorAll('.badge'); bd[0].className=c1; bd[0].textContent=t1; bd[1].className=c2; bd[1].textContent=t2; b.addEventListener('click',()=>openDone(x)); return b; }
 function esMia(x){ if(!sesion) return false; if(esAdmin()) return true; const n=normN(sesion.nombre); return normN(x.comisionista||(x.form&&x.form.comisionista))===n || normN(x.creado_por)===n; }
-async function renderHome(){ if(!sesion) return; let all=[]; try{ all=(await dbTodo()).filter(esMia); }catch(e){} all.sort((a,b)=>String(b.actualizado_en||b.creado_en||'').localeCompare(String(a.actualizado_en||a.creado_en||'')));
+async function renderHome(){ if(!sesion) return; { const ln=$('btn-lista-negra'); if(ln){ ln.classList.toggle('hidden',!esAdmin()); ln.href=(cfg.endpoint||DEFAULT_ENDPOINT)+'?lista=1'; } } let all=[]; try{ all=(await dbTodo()).filter(esMia); }catch(e){} all.sort((a,b)=>String(b.actualizado_en||b.creado_en||'').localeCompare(String(a.actualizado_en||a.creado_en||'')));
   $('home-list-title').textContent = esAdmin() ? 'Todas las órdenes' : 'Mis órdenes'; pintarSync();
   const list=$('home-list'); list.innerHTML='';
   $('home-empty').style.display=all.length?'none':'block'; $('home-hint').style.display=all.length?'':'none';
