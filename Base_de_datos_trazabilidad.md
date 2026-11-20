@@ -1,0 +1,194 @@
+---
+title: "Base de datos de trazabilidad — Registro de manejo"
+subtitle: "Cómo funciona y cómo se mantiene (versión 4.6, octubre 2026)"
+author: "Rural Bioenergía S.A. · Gerencia de trazabilidad"
+lang: es
+---
+
+# 1. Para qué existe
+
+La base de datos de trazabilidad recibe, de cada estancia, los eventos de manejo que los capataces cargan en el app **Registro de manejo** (entradas y salidas de animales, pesajes de auditoría, mortalidad, nacimientos, pérdida de botón electrónico y, en Ypoti, entradas a RIP y a confinamiento). Hoy sirve para ordenar lo recolectado y producir informes por estancia y período. Está armada para que, sin cambiar el modelo, se pueda hacer **trazabilidad individual** (dónde fue visto cada animal, cuándo, con qué peso, de dónde vino y a dónde fue), **margen por cabeza** (peso de entrada, peso de salida, días en campo, ganancia diaria) y **evaluación de proveedores y guías** (qué guía o proveedor trajo los animales que mejor rindieron).
+
+El principio de diseño es simple: cada registro del app se guarda entero (JSON) y además se **descompone en tablas normalizadas** con claves estables, de modo que cualquier herramienta (Google Sheets, R, Python, PostgreSQL) pueda consultarlas sin depender del app.
+
+# 2. Arquitectura
+
+```
+Teléfono del capataz                 Google (cuenta lucasmoller@ypoti.com)
+┌─────────────────────┐   HTTPS     ┌──────────────────────────────────────┐
+│ App "Registro de    │ ──POST───▶  │ Apps Script (servidor_apps_script.gs)│
+│ manejo" (PWA,       │   JSON+PDF  │  · valida contraseña por estancia     │
+│ offline, IndexedDB) │ ◀──JSON───  │  · guarda archivos en Drive           │
+│ GitHub Pages        │             │  · escribe las tablas en Sheets       │
+└─────────────────────┘             │  · envía el correo                    │
+                                    └──────────────────────────────────────┘
+                                         │                  │
+                                         ▼                  ▼
+                               Drive: carpeta        Sheets: planilla
+                               "Banco de datos       "Registros de manejo
+                                trazabilidad"         (base de datos)"
+```
+
+* **App**: página única (HTML/JS) publicada en GitHub Pages (`lucasmoller9646.github.io/registro-manejo`). Funciona sin señal: guarda todo en el teléfono (IndexedDB) y sincroniza cuando hay conexión. La URL del servidor y el correo vienen embebidos.
+* **Servidor**: un proyecto de Google Apps Script publicado como aplicación web (URL `/exec`). Se ejecuta con la cuenta `lucasmoller@ypoti.com`. No hay base de datos externa ni servidor propio.
+* **Drive**: carpeta `Banco de datos trazabilidad` (id `1ceQacSijwWHwh0dkiZTAqtvwyXlD5WKR`), una subcarpeta por estancia. Guarda el PDF y el JSON de cada registro, las fotos sueltas y la lista de IDE en CSV.
+* **Sheets**: la planilla `Registros de manejo (base de datos)` dentro de esa carpeta, con una hoja por tabla (sección 4).
+
+# 3. Flujo de un registro
+
+1. El capataz completa el registro en el app. El app genera un **id** (UUID v4) y, al guardar, arma el JSON (esquema `manejo-ypoti/3.x`) y el PDF.
+2. Para publicar, el app pide la **contraseña de la estancia** (o la maestra). Si no hay señal, el registro queda en cola y se envía solo al volver la conexión.
+3. El servidor (`doPost`, `tipo: "registro"`) valida la contraseña, comprueba si el id ya existe y, si existe con la misma o mayor versión, responde "ya recibido" sin duplicar nada (**idempotencia**: un reintento nunca crea una fila doble).
+4. Guarda PDF, JSON, fotos y CSV de IDE en Drive; escribe o reemplaza las filas en las hojas; reconstruye la hoja `animales`; registra el historial en `log`; envía el correo con PDF y JSON adjuntos.
+5. **Ediciones**: si el capataz edita un registro ya publicado, el app sube el mismo id con `version` +1 y el detalle de qué cambió. El servidor reemplaza la fila en `registros`, borra y vuelve a escribir las filas hijas de ese id (animales, camiones, COTAs, faltantes, fotos) y deja los archivos anteriores en Drive con su sufijo `_vN`. Así la última versión es siempre la vigente, y el historial completo queda en `log` y en Drive.
+
+# 4. Tablas (hojas de la planilla)
+
+Todas las hojas tienen **cabecera en la fila 1**. El servidor agrega automáticamente al final las columnas que falten cuando se publica una versión nueva, sin mover las existentes, de modo que la planilla nunca "se rompe" con una actualización. Fechas de evento en formato `YYYY-MM-DD`; horas en `HH:MM` (hora de Paraguay); identificaciones electrónicas (IDE) como texto de 15 dígitos sin espacios.
+
+## 4.1 `registros` — un registro por fila (cabecera del evento)
+
+Clave: `id` (UUID). Una fila por registro; las ediciones reemplazan la fila (la columna `version` sube). Columnas principales:
+
+| Grupo | Columnas |
+|---|---|
+| Identificación | `id`, `version`, `tipo_evento` (`entrada`, `salida`, `mortalidad`, `nacimiento`, `pesaje`, `pesaje_simple`, `medicamento`, `solicitud_transferencia`, `perdida_boton`, `entrada_rip`, `entrada_confinamiento`), `grupo` (`pasto` / `intensivo`), `estancia`, `fecha_evento`, `hora_registro`, `respondente`, `creado_en`, `modificado_en`, `recibido_en`, `actualizado_en_servidor`, `app_version` |
+| Ubicación en la estancia | `lote_controlpasto`, `piquete` (en intensivo: lote/piquete de destino) |
+| Camiones y guías | `chapa_camion` (varias separadas por " / "), `cantidad_camiones`, `cota_nro` (varias " / "), `cota_qr`, `cantidad_cotas`, `total_declarado_cotas`, `cota_archivo`, `guia_archivo` |
+| Animales | `cantidad_animales` (contados a mano), `cantidad_ids` (en la lista final), `cantidad_bascula`, `cantidad_baston`, `cantidad_sin_peso`, `peso_promedio_kg`, `peso_total_kg`, `fecha_pesaje`, `nombre_archivo_balanza`, `conciliacion_pct`, `solo_baston` (del bastón sin peso), `solo_bascula` (de la báscula descartados), `ids_coinciden`, `cota_coincide`, `guia_coincide`, `declarado_coincide` |
+| Intensivo (Ypoti) | `propiedad` (`propio`/`boitel`), `propietario`, `origen_tipo`, `origen_sistema`, `origen_lote`, `origen_piquete`, `destino_lote`, `destino_piquete`, `origen`, `destino` |
+| Mortalidad / nacimiento / botón | `nro_boton`, `causa_probable`, `ubic_lat`, `ubic_lon`, `ubic_precision_m`, `ubic_fuente`, `madre`, `sexo_cria`, `nro_boton_cria` |
+| Acta de no arreados | `cantidad_faltantes`, `faltantes_peso_medio_kg`, `faltantes_lugar`, `faltantes_motivo`, `faltantes_capataz`, `faltantes_auditor`, `faltantes_conformidad` |
+| Archivos | `url_pdf`, `url_json`, `url_fotos` (carpeta), `url_ids` (CSV), `url_foto_boton`, `cantidad_fotos` |
+| Otros | `observaciones`, `lat`, `lon` (posición del teléfono al guardar) |
+
+## 4.2 `ids_individuales` — libro de eventos por animal (la tabla central)
+
+Clave: (`registro_id`, `ide`). **Una fila por animal y por registro.** Es la tabla sobre la que se hace la trazabilidad: cada vez que un animal "es visto" (pasa por el bastón, por la báscula, muere, nace, pierde el botón o queda en un acta de no arreados) aparece una fila.
+
+| Columna | Contenido |
+|---|---|
+| `registro_id`, `version`, `tipo_evento`, `estancia`, `fecha_evento`, `hora`, `respondente`, `recibido_en` | de qué registro viene |
+| `ide` | identificación electrónica (15 dígitos). En mortalidad y pérdida de botón es el número escrito a mano; en nacimiento, el botón del ternero (si ya tiene); en actas, la caravana leída (puede quedar vacía) |
+| `peso_kg` | peso del animal para ese evento (vacío si no tiene) |
+| `peso_fuente` | de dónde salió ese peso: `bascula` (real), `historico` (último peso de báscula en la base, hasta 60 días antes; `peso_origen_fecha` y `peso_origen_registro` dicen de qué registro), `manual` (escrito por el usuario en el paso de inconformidades) o `promedio` (promedio de los pesados del mismo registro). Vacío en filas viejas = báscula. **Para cualquier cálculo de rendimiento usar solo `bascula`/vacío.** |
+| `fuente` | `ambos` (bastón y báscula), `baston` (leído, sin peso), `bascula` (pesaje sin bastón), `manual` (mortalidad, nacimiento, botón perdido), `acta` (no arreado; el peso es el estimado medio) |
+| `lote_controlpasto`, `piquete`, `origen`, `destino`, `grupo` | ubicación/contexto del evento |
+| `nro_guia`, `cota_nro`, `propietario_origen`, `establecimiento_origen`, `propietario_destino`, `establecimiento_destino` | datos de la guía/COTA del movimiento (cuando hay una sola COTA en el registro se copian a cada animal; con varias, se copian los números unidos por " / ") |
+| `raza`, `sexo`, `categoria`, `proveedor`, `nacimiento` | **mejor esfuerzo**: se toman del archivo de la báscula cuando trae esas columnas (exportaciones Tru-Test/XR5000). Pueden venir vacías. |
+| `causa`, `detalle` | causa de muerte; texto libre (madre, motivo del acta, ubicación, etc.) |
+
+Reglas importantes:
+
+* En **entradas y salidas** (y entradas RIP/confinamiento) valen solo los animales leídos con el **bastón**; la báscula aporta el peso (unión por IDE). Los animales que están en la báscula pero no en el bastón **no** se escriben.
+* Los animales del **acta de no arreados** sí se escriben (fuente `acta`), para que no se pierda su rastro, pero no son pesajes reales.
+* Desde la versión 3.5 el app puede completar pesos faltantes (histórico, a mano o promedio): esas filas llevan `peso_fuente` distinto de `bascula` y **no cuentan** para GMD ni para la búsqueda de pesos históricos (`tipo: 'pesos'` del servidor). El registro guarda además las **inconformidades** detectadas y su justificación (`registros.inconformidades`, `registros.justificaciones`).
+* Cuando un registro se edita, sus filas se borran y se reescriben con la nueva versión.
+
+## 4.3 `animales` — estado actual de cada animal (tabla derivada)
+
+Clave: `ide`. **Se reconstruye entera desde `ids_individuales` después de cada registro recibido** (y se puede reconstruir a mano ejecutando `reconstruirAnimales` en el editor de Apps Script). No se edita a mano: cualquier corrección se hace en los registros (editando desde el app) y la tabla se regenera.
+
+| Columna | Contenido |
+|---|---|
+| `estado` | `activo`, `salido` (último evento es una salida) o `muerto` |
+| `estancia_actual`, `lote_actual`, `piquete_actual` | del último evento, si está activo |
+| `primer_evento`, `primer_tipo`, `primera_estancia`, `ultimo_evento`, `ultimo_tipo`, `ultima_estancia`, `eventos`, `pesajes` | resumen del recorrido |
+| `primer_peso_kg`, `fecha_primer_peso`, `ultimo_peso_kg`, `fecha_ultimo_peso`, `ganancia_total_kg`, `dias_entre_pesos`, `gmd_kg_dia` | rendimiento (pesos reales de báscula; no cuenta los estimados del acta) |
+| `peso_entrada_kg`, `fecha_entrada`, `guia_entrada`, `cota_entrada`, `proveedor`, `propietario_origen`, `establecimiento_origen` | de la primera entrada registrada: base para margen por cabeza y evaluación de proveedores |
+| `raza`, `sexo`, `categoria`, `nacimiento` | primer valor conocido |
+| `fecha_salida`, `destino_salida`, `guia_salida`, `peso_salida_kg` | de la última salida |
+| `fecha_muerte`, `causa_muerte` | si murió |
+| `registros` | ids de todos los registros donde aparece (separados por espacio) |
+
+## 4.4 `cotas` — guías / COTAs (una fila por COTA y por registro)
+
+Clave: (`registro_id`, `nro`). Columnas: `cota_nro`, `nro_guia`, `fecha_emision`, `propietario_origen`, `establecimiento_origen`, `lat_origen`, `lon_origen`, `propietario_destino`, `establecimiento_destino`, `lat_destino`, `lon_destino`, `finalidad`, `animales_declarados`, `total_declarado`, `texto_qr` (contenido completo del QR de SENACSA), `foto_guia`, `modo` (`qr` = leído del código; `manual` = el QR no se pudo leer y se cargaron a mano guía y COTA), `cantidad_animales` y `peso_promedio_kg` del registro, `respondente`. Es la tabla para analizar por guía o por proveedor (`propietario_origen` / `establecimiento_origen` son los códigos SENACSA).
+
+## 4.5 Otras hojas
+
+* `camiones`: (`registro_id`, `nro`) → `chapa`, `foto_precinto`, `nro_precinto` (v4: número leído de la foto por la IA o escrito a mano).
+* `faltantes`: acta de no arreados del pesaje de auditoría: una fila por caravana identificada (o una sola con la `cantidad` si no se identificó ninguna), con `lugar`, `motivo`, `capataz`, `auditor`, `conformidad`, `peso_medio_estimado_kg`.
+* `fotos`: una fila por foto guardada en Drive (`tipo_foto`: precinto_camionN, guia, animal, boton, nacimiento, ocurrido, no_arreados, satelite; `url`).
+* `medicamentos`: una fila por aplicación de medicamento (`registro_id`, `brinco`, `medicamento`, `codigo_articulo` del depósito o vacío, `en_lista`, `dosis`, `unidad`, `modo` simple/masiva, lote, piquete, respondente, versión). Las mismas aplicaciones aparecen en `ids_individuales` como eventos del animal (fuente `manual`, detalle "medicamento: …"), para que el historial sanitario quede junto al resto del recorrido de cada IDE/brinco.
+* `brincos_activos` (opcional, se crea a mano): `ide`, `estancia`, `lote`, `categoria`. Sirve para cargar una exportación del stock (ControlPasto / SIGOR) y que el app sugiera esos brincos al escribir el Nº de botón aunque los animales todavía no hayan pasado por un registro. El pedido `brincos` combina esta hoja con los animales activos de `animales` (los muertos o salidos según `animales` nunca se sugieren).
+* `respaldos`: copias de seguridad que mandan los teléfonos de lo que todavía **no** está en la base (borradores, registros terminados sin publicar y ediciones en curso): `id`, `estancia`, `tipo_evento`, `estado_local` (borrador / pendiente / compartido / enviado con edición), `edicion`, `respondente`, `version`, `actualizado_en`, `recibido_en`, `id_archivo` y `url` del JSON en la carpeta de Drive `respaldos_telefonos` (el registro completo del teléfono, con fotos; se sobrescribe en cada copia), `tamano_kb`, `dispositivo`, `app_version`. Cuando el registro se publica, su fila y su archivo se borran. No forma parte de la trazabilidad: es solo para recuperar el trabajo de un teléfono (pedidos `recuperar` y `recuperar_items`, con la contraseña de la estancia).
+* `solicitudes`: una fila por solicitud de transferencia de ganado (`registro_id`, `token` del enlace, `estado` pendiente/aprobada/rechazada, origen y destino con códigos SENACSA, categoría, guías, animales por guía, total y total en letras, naturaleza, fecha, lugar, solicitante, observaciones, `decidido_en`, `aprobador`, `comentario`, `hash_firma` SHA-256, `url_pdf_firmado`/`id_pdf_firmado`). La decisión se toma desde la página web del enlace (`doGet?sol=<token>`, protegida por `CONFIG.CLAVE_APROBACION`); el app consulta el estado con el pedido `estado_solicitud` y descarga el PDF firmado.
+* `usuarios` (v4): una fila por persona: `id`, `nombre` (MAYÚSCULAS), `codigo` (6 números, único), `estancias` (separadas por coma, `TODAS` u `Otra`), `rol` (normal / administrador), `estado` (pendiente / aprobado / rechazado / bloqueado), `creado_en`, `aprobado_en`, `ultimo_acceso`, `dispositivo`, `observaciones`. La administración la edita a mano.
+* En v4, `registros` suma `creado_por`, `creado_por_id`, `modificado_por`, `enfermedad` y `nros_precinto`; `medicamentos` suma `enfermedad`; `respaldos` suma `usuario_id` y `usuario`; el tipo de evento `descarga_camion` (Descarga de camión, Ypoti) se agrega a los intensivos.
+* v4.5: tipo de evento `salida_faena` (Salida a faena, Ypoti, grupo intensivo): camión sin precinto, COTA, animales y `piquete` = baia del confinamiento de donde salen; en `animales` el estado queda `a faena` hasta que el informe Padroniza lo pasa a `faenado`.
+* v4.6: `registros` suma `sexo`, `necropsia` (si/no) y `lugar_muerte` (pasto donde se ubicó la muerte) — todos opcionales y cargados en mortalidad; `raza` ya existía —; `medicamentos` suma `sexo` y `raza` (en la aplicación masiva, si la planilla trae una columna `Corral`, ese valor va en `piquete`). En `ids_individuales`, las filas de mortalidad llevan `sexo` y `raza` cuando se cargaron. Nuevo pedido `informe_sanitario` (`clave`, `estancia`, `desde`, `hasta`): devuelve las muertes del período, las aplicaciones desde el 1º de enero del año (para saber qué animal es caso nuevo), los datos de cada animal desde `animales` y el rodeo mensual del ControlPasto (stock del 1º de cada mes, entradas, salidas y muertes); el app calcula los indicadores y arma el PDF y el Excel en formato FOCO.
+* `escore_heces_baias` (v4.4, Ypoti): una fila por baia evaluada en el escore de heces: `registro_id`, `estancia`, `fecha_evento`, `evaluador`, `baia` (A01…U10), `linea`, `nro`, `dieta` (adaptacion / crecimiento / terminacion), `dias_cocho`, `ims_pv`, `muestras`, conteos `liquida`/`suave`/`pastosa`/`firme`/`dura`, `nota` (sobre 10: pastosa 1, firme y suave 0,5, dura y líquida 0), `clase` (deseable ≥ 8,5 · atencion 7 a 8,5 · peligro < 7), `ia_leidas`, `ia_iguales`, `inicio`, `fin`, `version`. El pedido `heces_historial` la lee para sugerir las baias del protocolo (3 por línea, rotando semana a semana).
+* `escore_heces_muestras` (v4.4): una fila por bosta: `baia`, `n` (1 a 10), `nota_persona`, `nota_fuente` (persona / aceptó la IA), `nota_ia`, `coincide`, `ia_vista` (sí, o "no (a ciegas)" cuando la IA leyó después), `ia_seguro`, `ia_modelo`, `ia_motivo`, `lat`/`lon`/`precision_m` del teléfono al sacar la foto, `hora`, `url_foto` (Drive, carpeta `fotos_escore_heces_<fecha>_<id8>`).
+* `senacsa_eventos` (v4.9): historial oficial de los DIs que entrega el SENACSA (planilla .xls por establecimiento, importada desde el app por un administrador en Informes › Buscar un animal). Una fila por evento, sin repetir (clave `ide|tipo|fecha|protocolo|establecimiento o lugar`): `ide`, `sexo`, `carimbo`, `fecha_aplicacion`, `tipo` (Identificación, Entrada de Cota, Paso por Puesto de Control, Baja de Animales, Faena de Animales), `fecha`, `protocolo` (número de protocolo, COTA, registro de baja o planificación de faena), `estab_cod` y `estab_nombre` (donde se aplicó el botón, destino de la COTA o establecimiento de la baja), `prop_doc` y `prop_nombre`, `lugar` (frigorífico o puesto de control), `descripcion` original, `informe_estab` (establecimiento de la planilla), `archivo`, `importado_en`. Las columnas se guardan como texto (los códigos con cero adelante y las fechas no se convierten).
+* `senacsa_animales` (v4.9, derivada): una fila por animal, rehecha después de cada importación: `situacion` según el SENACSA (`activo`, `faenado`, `baja`, `tercero` = en un establecimiento de otro propietario), `estab_actual_*`, `estancia_actual` (si el código es de una estancia de la Rural: Ypoti 0103780002, Oro Verde 0103780080, Lusipar 0210150003, Santa Clara 0210150007, Santa Maria 0101190045, Ybypora 0107240013, Bella Vista 0107120040, La Esperanza 1302220001; otros códigos se agregan en la propiedad `SENACSA_ESTAB` del Apps Script), `desde`, origen (`fecha_identificacion`, `estab_identificacion`, `prop_identificacion`) y `tl` (línea de tiempo resumida en JSON). La usan la búsqueda de un animal (`buscar_animal`), el chequeo de los brincos al cargar un registro (`animal_situacion`: animal que el SENACSA ubica en otra estancia o que ya fue faenado/dado de baja → inconformidad con justificación; tolerancia de 30 días por el atraso de las COTAs; en las entradas solo se controla faena y baja) y la lista de brincos activos de cada estancia (`brincos`, fuente `senacsa`).
+* `whatsapp_cola` (v4.10): un aviso por fila: `id` (`reg:<registro>:v<versión>`, `inf:<informe>` o al azar), `creado_en`, `evento`, `estancia`, `ypoti` (si = también va a Paulinho), `titulo`, `detalle`, `por`, `file_id` (PDF en Drive, adjunto al mensaje), `archivo`, `estado` (pendiente / reintentar / enviado / vencido), `intentos`, `ultimo_intento` y `resultado` (JSON: id del mensaje de WhatsApp — wamid — o error por número). Los PDF de los informes que mandan los teléfonos quedan en Drive, en `informes/<estancia>`. Desde la 4.11 lleva además `para` (JSON con nombre, número e idioma de cada destinatario de WhatsApp) y `correos` (los correos del aviso).
+* `envios_contactos` (v4.11): una persona por fila: `id`, `nombre`, `cargo`, `whatsapp` (solo dígitos, con el código del país), `correo`, `idioma` (`es` o `pt_BR`), `activo` (si/no), `observaciones`, `actualizado_en`, `actualizado_por`. Se edita en el app (📬 Envíos automáticos › Contactos).
+* `envios_programados` (v4.11): un envío por fila: `id`, `nombre`, `informe` (`avisos`, `mortandad`, `manejo`, `sanitario`, `stock`, `confinamiento`, `pendientes`, `ia`), `estancias` (`*` = todas, o nombres separados por coma), `agrupar` (`una` o `separado`), `frecuencia` (`inmediato`, `diaria`, `semanal`, `quincenal`, `mensual`), `dia` (1–7 en la semanal, 1–28 o `ultimo` en la mensual), `hora` (0–23, hora de Paraguay), `periodo` (`auto`, `mes_actual`, `ano_actual`, `ultimos_30`), `eventos` (solo avisos: `registro`, `informe`, `senacsa`), `contactos` (ids), `canales` (`whatsapp`, `correo`), `activo`, `ultimo_programado` (último horario ya atendido, `AAAA-MM-DDTHH`), `ultimo_envio`, `ultimo_resultado`, `creado_por`, `actualizado_en`, `actualizado_por`.
+* `envios_historial` (v4.11): un informe enviado por fila: `fecha`, `envio_id`, `envio`, `informe`, `estancias`, `desde`, `hasta`, `archivo`, `url` (PDF en Drive › informes › automaticos › AAAA-MM), `destinatarios`, `canales`, `cola_id` (fila de `whatsapp_cola`), `correo`, `resultado`, `por` (`automático` o quien lo mandó a mano).
+* `tratos` (v4.12): un trato por fila: `registro_id`, `version`, `estancia`, `fecha_evento`, `hora`, `lote`, `piquete`, `pasto`, `categoria`, `cabezas`, `peso_medio_kg`, `kg_pv_total`, `producto`, `g_por_100kg`, `kg_por_saco`, `dias`, `kg_calculado`, `sacos_calculados`, `sacos_colocados`, `kg_colocados`, `diferencia_sacos`, `controlpasto_al`, `respondente`, `observaciones`, `url_pdf`.
+* `diesel` (v4.12): una carga por fila: `registro_id`, `version`, `estancia`, `fecha_evento`, `hora`, `maquina_codigo`, `maquina`, `maquina_otra` (sí = no estaba en la lista), `lectura_antes`, `lectura_despues`, `litros`, `fuente_antes` / `fuente_despues` (ia o manual), `ia_seguro`, `litros_editados`, `respondente`, `observaciones`, `url_foto_antes`, `url_foto_despues`, `url_pdf`. Desde v4.13.2 también las **entradas al tanque** (camión cisterna): `movimiento` (carga o entrada), `documento_tipo` (remision o factura), `documento_nro`, `proveedor`, `proveedor_ruc`, `documento_fecha`, `tanque`, `fuente_documento` (ia, ia_y_manual o manual), `url_foto_documento` y `documento_repetido` (id del registro anterior con el mismo número de documento y proveedor). En una entrada, `litros` son los litros recibidos y las columnas de máquina y reloj quedan vacías.
+* `parametros` (v4.12): `clave` (trato, causas) → `valor` en JSON, editado en el app (⚙ Parámetros).
+* `maquinas` (v4.12): `estancia`, `codigo`, `nombre`, `tipo`, `activo`, `fuente` (SAP = la manda el app de integración; manual = cargada en el app), `actualizado_en`. Estancia `*` (v4.13.3) = la máquina vale para todas las estancias. Además, el app trae embebida la lista de Logística del SAP (182 normas de reparto, 19/11/2026) para elegir la máquina sin señal.
+* `balanza_cola` (v4.12): archivos de balanza esperando a la IA: `registro_id`, `version`, `estancia`, `tipo_evento`, `fecha_evento`, `archivo`, `file_id` (Drive › balanza_archivos), `estado` (pendiente, reintentar, procesado, sin_ia, error, reemplazado), `intentos`, `creado_en`, `procesado_en`, `resultado`.
+* `balanza_datos` (v4.12): una fila por animal del archivo, con campos estándar: `ide`, `vid`, `peso_kg`, `fecha_pesaje`, `hora_pesaje`, `raza`, `sexo`, `categoria`, `nacimiento`, `edad_meses`, `denticion`, `pelaje`, `carimbo`, `clasificacion`, `condicion_corporal`, `proveedor`, `estancia_origen`, `lugar_compra`, `comisionista`, `comprador`, `guia_compra`, `guia_venta`, `guia`, `cota`, `acoplado`, `chapa`, `precio_unidad`, `precio_kg`, `parceria`, `potrero_actual`, `potrero_anterior`, `lote`, `baia`, `ubicacion`, `destino`, `sanidad`, `notas`, `peso_anterior`, `gdm`, `gpv`, `dias`, `otros` (JSON con columnas sin campo) y `procesado_en`.
+* `balanza_columnas` (v4.12): nombre de columna normalizado → campo estándar (lo decide la IA la primera vez; se puede corregir).
+* `balanza_diccionario` (v4.12): `campo` + valor original normalizado → valor estándar (raza, sexo, categoría, clasificación…).
+* `compras_vinculos` (v4.13): una fila por entrada (entrada pasto, RIP, descarga de camión): `registro_id`, `version`, `estancia`, `tipo_evento`, `fecha_llegada`, `orden_id` (app de compras), `proveedor`, `intermediario`, `categoria`, `fecha_compra`, `cabezas_compradas`, `cabezas_llegadas`, `peso_compra_kg`, `peso_llegada_kg`, `quiebre_pct`, `vinculo` (cota, guia, probable, elegida, ninguna), `estado` (pendiente, vinculado, sin_compra), `resultado`, `actualizado_en`; desde v4.13.1 también `peso_llegada_fuente` (balanza_llegada o pesaje_posterior), `fecha_pesaje_llegada`, `registros_pesaje`, `cabezas_pesadas`, `raza` (Zebu, Híbrido, Mezclado) y `raza_fuente` (capataz o balanza). En la base del app de compras se escribe la hoja `llegadas` (ver pedido_app_compras_llegadas.md).
+* v4.14: `usuarios` suma `whatsapp` (solo dígitos, con el código del país; se pide al pedir el código y, a los usuarios que ya existían, la primera vez que abren el app). `envios_contactos` suma `usuario_id`: el contacto de ese usuario, creado o vinculado al guardar su WhatsApp; con él, cada usuario programa sus propios envíos (solo a sí mismo, por WhatsApp y de sus estancias). En `registros`, `datos.animales_muertos_confirmados` lista los brincos que figuraban muertos en la base y que el usuario decidió registrar igual («Seguir igual»). El informe `mortandad` de los envíos se llama ahora «Informe de sanidad y mortandad» e incluye la parte sanitaria; `sanitario` queda solo para los envíos que ya existían.
+* v4.14: la foto del confinamiento (`confinamiento_base`, formato `confinamiento-app/1`) acepta en cada lote la curva de consumo: `c_d0` (fecha del día 1), `c_pv` y `c_ms` (consumo diario en % PV y kg MS/cab, `null` sin dato), `c_fase` (una letra por día: A adaptación, C crecimiento, T terminación, O otra), `c_prior` y `c_post` (curva esperada y posterior en % PV) y `c_min` (mínimo % PV en terminación); hasta 450 días por vector y 4 MB por foto.
+* v4.14: stock de la farmacia: no se guarda en la planilla. El servidor lo consulta en la API del app de la farmacia (`farmacia_stock`, propiedades `FARMACIA_API_URL` y `FARMACIA_API_TOKEN`) y lo guarda 15 minutos en la caché.
+* v4.15: `ids_individuales` suma `ide_anterior` y `animales` suma `ide_anterior` e `ide_nuevo`: en la pérdida de botón con el número nuevo (`datos.nro_boton_nuevo`), la fila del botón nuevo lleva el número anterior y la hoja `animales` junta las dos historias en el número nuevo; el anterior queda con estado `botón reemplazado`.
+* v4.15: en la salida, `datos.proveniencia` = `empresa` (traslado a otra estancia de la empresa, con precinto) o `externo` (venta, frigorífico, otro dueño). El precinto se pide solo en los traslados entre estancias de la empresa.
+* v4.15: `tratos` suma `dias_cubiertos` (para cuántos días alcanzó lo que se puso) y `proximo` (cuándo vuelve a tocar). El **plan de suplementación** de cada estancia va en `parametros`, clave `supl:<estancia>` (JSON: suplementos con dosis y bolsa, lotes con suplemento y cada cuántos días, hora del aviso). El aviso diario al tratorista entra en `whatsapp_cola` (evento `trato del día`) con un PDF en Drive › informes › trato_del_dia.
+* v4.15: `escore_heces_baias` admite la dieta `rip` con el piquete de la RIP (ej. PC01A) en `baia`.
+* `log`: historial de cada registro (creado, editado — con el detalle de qué cambió —, autorizado, recibido/actualizado en el servidor), con `version`, `fecha`, `app_version` y (v4) `usuario` que hizo cada paso.
+
+# 5. Archivos en Drive
+
+Dentro de `Banco de datos trazabilidad/<estancia>/`:
+
+* `manejo_<estancia>_<fecha>_<tipo>_<id8>[_vN].pdf` y `.json`: el registro completo (el JSON incluye las fotos en base64; es la fuente de verdad si alguna vez hubiera que reprocesar).
+* `manejo_..._ids.csv`: `ide;peso_kg;fuente;raza;sexo;categoria;proveedor;nacimiento;peso_fuente;peso_origen_fecha` (lista final de animales del registro).
+* `fotos_manejo_.../`: fotos sueltas en JPG (precintos, guías, animal, botón, nacimiento, acta, imagen satelital).
+
+# 6. Cómo consultar
+
+* **Sheets**: filtros y tablas dinámicas directamente sobre `animales`, `ids_individuales` o `cotas`. Ejemplos: ganancia media por `proveedor` (tabla dinámica sobre `animales`, promedio de `gmd_kg_dia`); animales que entraron con una guía (`ids_individuales` filtrado por `nro_guia`); recorrido de un animal (`ids_individuales` filtrado por `ide`, ordenado por `fecha_evento`).
+* **Informe de trazabilidad** desde el app: por estancia y período, con una tabla por tipo de evento y enlaces a fotos e IDE (usa el pedido `consulta` del servidor).
+* **Recuperar registros** desde el app (pedidos `recuperar` y `recuperar_items`, con la contraseña de la estancia o la maestra): lista los registros publicados de la estancia en el período (desde `registros`) y las copias de `respaldos`, y devuelve el JSON completo de cada uno leyendo el archivo de Drive (`registros.id_json`, o la URL `url_json` en los registros anteriores a la versión 3.8).
+* **Pesos históricos** desde el app (pedido `pesos` del servidor, sin contraseña): recibe una lista de IDE, una fecha y una ventana en días (60) y devuelve, por IDE, el último peso real de báscula dentro de esa ventana (`peso_kg`, `fecha`, `tipo_evento`, `registro_id`). Lo usa el paso de inconformidades para completar animales que pasaron por el bastón pero no por la báscula.
+* **R / Python**: exportar las hojas como CSV (Archivo → Descargar) o leerlas con la API de Sheets (`googlesheets4` en R, `gspread` en Python) con la cuenta de servicio que defina TI. Las claves son estables, así que se pueden cruzar tablas sin ambigüedad.
+* **Migración a PostgreSQL** (cuando el volumen lo justifique): las hojas se corresponden una a una con tablas. Propuesta de DDL mínima, respetando los nombres de columna:
+
+```sql
+create table registros       (id uuid primary key, version int, tipo_evento text, estancia text, fecha_evento date, ... );
+create table ids_individuales(registro_id uuid references registros(id), ide text, fecha_evento date, peso_kg numeric, fuente text, ...,
+                              primary key (registro_id, ide));
+create table cotas           (registro_id uuid references registros(id), nro int, cota_nro text, nro_guia text, ..., primary key (registro_id, nro));
+create table camiones        (registro_id uuid references registros(id), nro int, chapa text, ..., primary key (registro_id, nro));
+create table faltantes       (registro_id uuid references registros(id), ide text, cantidad int, ...);
+create table fotos           (registro_id uuid references registros(id), tipo_foto text, nro int, url text);
+create table log             (registro_id uuid, version int, fecha timestamptz, accion text, detalle text);
+-- 'animales' no se migra: se reconstruye con una vista materializada sobre ids_individuales
+```
+
+La carga puede hacerse con un trabajo programado que lea la planilla (o los JSON de Drive) y haga `upsert` por clave; como el servidor nunca borra filas de `registros` (solo reemplaza por id), la sincronización incremental es directa usando `recibido_en` / `actualizado_en_servidor`.
+
+# 7. Mantenimiento
+
+* **Contraseñas**: de 4 números, una por estancia (más "Otra" para estancias escritas a mano, la maestra y la de aprobación de solicitudes). Viven solo en `CONFIG` del script (el app no las guarda ni lleva sus hash) y las verifica el servidor (`verificar_clave` y en cada pedido), con un límite de `CONFIG.MAX_FALLOS` intentos incorrectos cada 15 minutos por estancia (CacheService). Para cambiar una clave se edita `CONFIG.CLAVES` y se publica una nueva versión del script; no hace falta tocar el app.
+* **Actualizar el servidor**: pegar el `.gs` nuevo en el proyecto y publicar con *Implementar → Administrar implementaciones → lápiz → Nueva versión*; la URL `/exec` no cambia, así los teléfonos no necesitan reconfigurarse. Una vez por cambio de permisos, ejecutar `probarConfiguracion` desde el editor.
+* **Actualizar el app**: reemplazar `index.html` y `sw.js` en el repositorio de GitHub Pages. El `sw.js` lleva un número de versión de caché; al cambiarlo, los teléfonos instalados toman la versión nueva la próxima vez que abren el app con señal.
+* **Reconstruir `animales`**: función `reconstruirAnimales` en el editor de Apps Script (se ejecuta sola tras cada registro).
+* **Corregir un registro**: desde el app, abrirlo, *Editar*, guardar y volver a publicar; el servidor reemplaza la fila y las filas hijas, y anota el cambio en `log`. No conviene editar las hojas a mano, porque la siguiente versión del mismo registro pisaría la corrección.
+* **Copias de seguridad**: Drive guarda versiones de la planilla (Archivo → Historial de versiones). Además, cada registro existe como JSON en Drive, así que la planilla entera puede regenerarse reprocesando los JSON si hiciera falta.
+* **Límites conocidos**: Sheets admite hasta 10 millones de celdas; `ids_individuales` crece unas 300 filas por camión cargado, por lo que hay margen para varios años. El tiempo de respuesta del servidor crece con el tamaño de `ids_individuales` (reconstruye `animales` en cada envío); cuando pase de ~200 000 filas conviene pasar esa reconstrucción a un trabajo programado o migrar a PostgreSQL. El servidor usa un bloqueo (`LockService`) para que dos teléfonos no escriban al mismo tiempo.
+
+# 8. Identificadores y convenciones
+
+* `id` de registro: UUID generado en el teléfono; único en toda la base; aparece en el nombre de los archivos (primeros 8 caracteres).
+* `ide`: identificación electrónica de 15 dígitos (`600 010001073200` → `600010001073200`). El app acepta cualquier archivo de balanza y solo usa las columnas IDE y peso (y, si existen, raza, sexo, categoría, proveedor y nacimiento).
+* `version`: empieza en 1 y sube con cada edición publicada.
+* Estancias: Ypoti, Ybypora, Cafetalera, La Esperanza, Santa Clara, Lusipar, Oro Verde, Santa Maria, Cielo Azul, Bella Vista, Cerro Memby y "Otra" (nombre libre, escrito por el capataz).
+* Tipos de evento y su significado para el stock: `entrada*` suma, `salida` resta, `mortalidad` resta, `nacimiento` suma, `pesaje` y `perdida_boton` no mueven stock.
