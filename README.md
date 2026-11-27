@@ -9,29 +9,38 @@ Está construido sobre el app **Registro de manejo** (misma base: PWA que se agr
 - **Km del flete = km por ruta hasta el acceso + km del camino de la empresa.** Reemplaza los agregados estimados que había (Yby Pora +6 km, La Esperanza ~21 km en línea recta). En el mapa, el tramo por ruta va en azul, el camino de la empresa en verde, con las marcas «Acceso» y el corral de la estancia; el texto de la orden dice cuántos km son de cada tramo. Los puntos intermedios que agrega el comisionista quedan antes del acceso.
 - Cerro Memby y Yby Pytá siguen como antes (hasta la coordenada de la estancia) hasta que tengan su camino. Para cambiar o agregar un camino: `CAMINOS_CORRAL` en `index.html` ([lon, lat] desde el acceso hasta el corral, y los km).
 
-## Novedades app 2.3.0 · servidor 2.4.0 · La compra contra la curva de invernada (27/11/2026)
-- Cuando Pedro (o cualquier administrador) mira una compra, ve dónde cae el negocio en la curva **α + β · peso** del indicador de invernada, con el **ε**: la distancia entre el precio pagado y la curva.
-  - **ε = precio por cabeza ÷ (α del sexo + β × peso) − 1.** Positivo = se pagó por encima de la curva; negativo = por debajo.
-  - Se calcula con la curva de la **semana de cada compra**.
+## Novedades app 2.3.0 · servidor 2.4.0 · La compra contra la curva de invernada: ε del mercado y ε nuestro (27/11/2026)
+- Cuando Pedro (o cualquier administrador) mira una compra, ve dónde cae el negocio en la curva **α + β · peso**, con dos números.
+- **ε mercado = precio por cabeza ÷ (α del sexo + β × peso) − 1.**
+  - La curva es la del indicador de invernada de la semana de la compra.
+  - Dice cuánto se pagó por encima o por debajo del mercado.
+- **ε nuestro:** es lo mismo, pero contra **nuestra propia curva**, estimada con nuestras compras de los **últimos N días** sin la compra evaluada. Dice si esta compra salió más cara o más barata que lo que venimos pagando por un animal de ese peso.
+  - **Precio llevado a la semana evaluada:** cada compra se ajusta con el movimiento del mercado (precio × β de la semana ÷ β de su semana).
+  - **Recta propia:** con 6 lotes o más del mismo sexo y 25 kg o más de desvío de peso, se estima una recta α + β·peso por mínimos cuadrados ponderados por cabezas. Se acepta si α ≥ 0 y β está entre 0,25 y 4 veces el β del mercado.
+  - **Si no alcanza:** se usa la curva del mercado multiplicada por el premio medio que pagamos en el período.
+- **Período:**
+  - por defecto **30 días**;
+  - se cambia en la página y en el app con los botones 30 / 60 / 90 / 180 días; el app recuerda la elección en el teléfono;
+  - la propiedad `CURVA_DIAS` cambia el valor por defecto para todos;
+  - el período también define qué remates y qué compras entran en el gráfico y en la tabla.
 - **Dónde aparece:**
   - en la **página de autorización** del enlace del correo, con el gráfico;
-  - en el **app**: tarjeta «Precio contra la curva de invernada» en la pantalla de la orden, solo para administradores;
+  - en el **app**, en la tarjeta «Precio contra la curva de invernada» de la pantalla de la orden, solo para administradores;
   - en el **correo** del pedido de autorización, solo los números.
 - **Qué se ve:**
-  - el ε en grande, la diferencia por cabeza y en el lote, y cómo queda esta compra contra el ε medio de nuestras compras de las últimas 8 semanas (ponderado por cabezas);
-  - **dos gráficos**: valor por cabeza (α + β·peso) y precio por kilo (β + α ÷ peso). Llevan los lotes de remate de las últimas 8 semanas (azul macho, rosado hembra, tamaño por cabezas), las curvas de macho y hembra, nuestras compras (naranja) y **esta compra** (amarillo), con una línea punteada hasta la curva;
-  - la **tabla** de las últimas compras con su ε.
+  - los dos ε, con la diferencia por cabeza y en el lote;
+  - **dos gráficos**: valor por cabeza (α + β·peso) y precio por kilo (β + α ÷ peso). Llevan los remates del período (azul macho, rosado hembra, tamaño por cabezas), las curvas del mercado, **nuestra curva** (naranja punteada), nuestras compras (naranja) y **esta compra** (amarillo), con una línea punteada hasta las dos curvas;
+  - la **tabla** de las compras del período con los dos ε de cada una.
 - **Datos:**
   - **curva y remates:** planilla «Preços de Invernada PY — base». De la aba INDICADOR salen β, α macho y α hembra de cada semana; de la aba BASE, los lotes vendidos de invernada, con sexo, hasta 450 kg y entre 4.000 y 45.000 Gs/kg;
-  - **nuestras compras:** planilla de compras, hoja BD COMPRAS. Se usan la fecha (D), la categoría (O), las cabezas (P), el peso promedio sin desbaste (U) y el costo por animal (AE), que es el precio pagado al productor con IVA;
-  - **esta compra:** el precio por cabeza y el peso promedio de la orden. Si la orden ya está en la BD COMPRAS, no se repite en la lista.
+  - **nuestras compras:** planilla de compras, hoja BD COMPRAS. Se usan la fecha (D), la categoría (O), las cabezas (P), el peso promedio sin desbaste (U) y el costo por animal (AE), que es el precio pagado al productor con IVA. La orden en curso no se repite: se identifica por ID APP.
 - **Categorías:**
   - **macho:** desmamante macho, toretón y terneros;
   - **hembra:** desmamante hembra, terneras y vaquillas;
-  - **sin curva:** novillos, toros, vacas y «Otra». Para estas categorías se avisa que no hay curva de invernada.
-- Al **autorizar**, el servidor guarda en la orden `curva_eps_pct`, `curva_ref_cab` y `curva_semana`, para analizar después cuánto se paga contra el mercado.
+  - **sin curva:** novillos, toros, vacas y «Otra», con un aviso.
+- Al **autorizar**, la orden guarda `curva_eps_pct`, `curva_eps_nuestro_pct`, `curva_ref_cab`, `curva_ref_nuestra_cab`, `curva_semana` y `curva_dias`.
 - **Servidor:**
-  - el servidor lee las dos planillas y las guarda 30 minutos en caché;
+  - el servidor guarda 30 minutos en caché lo que lee de las planillas;
   - `curvaActualizarAhora` vuelve a leerlas en el momento;
   - `probarCurva` muestra el ε de la última orden, o de la propiedad `CURVA_ORDEN`;
   - los parámetros están en `CURVA` (Código.gs).

@@ -1794,35 +1794,43 @@ $('btn-config').addEventListener('click',()=>{ if($('scr-home').classList.contai
    últimas 8 semanas y nuestras compras (BD COMPRAS), y devuelve el ε de esta compra. curvaHtml es la misma función que
    usa la página de autorización del correo (Código.gs). */
 function curvaHtml(d) {
-  /* v2.4 · gráfico «la compra contra la curva α + β·peso» (mismo código en la página de autorización y en el app) */
+  /* v2.4 · gráfico «la compra contra la curva α + β·peso»: ε del mercado y ε nuestro (mismo código en la página de autorización y en el app).
+     Los botones del período tienen class="cv-per" y data-dias: quien muestra el HTML escucha el clic y vuelve a pedir la curva. */
   function nf(x, k) { k = k || 0; return Number(x).toLocaleString('es-PY', { minimumFractionDigits: k, maximumFractionDigits: k }); }
   function sg(x) { return x > 0 ? '+' : x < 0 ? '−' : ''; }
-  function pct(e) { return sg(e) + nf(Math.abs(e * 100), 1) + ' %'; }
+  function pct(e) { return e == null ? '—' : sg(e) + nf(Math.abs(e * 100), 1) + ' %'; }
   function gs(x) { return '₲ ' + nf(Math.round(x)); }
   function gsS(x) { return sg(x) + '₲ ' + nf(Math.abs(Math.round(x))); }
   function mill(x) { return nf(x / 1e6, 2) + ' mill.'; }
   function millS(x) { return sg(x) + '₲ ' + nf(Math.abs(x) / 1e6, 1) + ' mill.'; }
   function fe(s) { s = String(s || ''); return s.length >= 10 ? s.slice(8, 10) + '/' + s.slice(5, 7) : s; }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-  function niv(e) { return e > 0.08 ? 'alta' : e > 0.03 ? 'media' : e < -0.03 ? 'baja' : 'en'; }
-  var COL = { M: '#2F6FD0', F: '#CF4A86', C: '#E8702A', A: '#F6C431' };
-  var CSS = '<style>.cv{font-size:14px;line-height:1.45}.cv-top{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:2px 0 8px}'
-    + '.cv-eps{font-size:26px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;padding:4px 10px;border-radius:8px;background:var(--surface-2,#ECEAE2)}'
-    + '.cv-eps.alta{color:#fff;background:#A23B1E}.cv-eps.media{color:#5A3E00;background:#F7DF9C}.cv-eps.baja{color:#fff;background:#04522B}.cv-eps.en{color:var(--ink,#1B1F1B)}'
-    + '.cv-txt{flex:1 1 240px;min-width:0}.cv-txt p{margin:0 0 6px}.cv-sub{color:var(--ink-3,#777F72);font-size:12.5px}'
+  function niv(e) { return e == null ? 'nd' : e > 0.08 ? 'alta' : e > 0.03 ? 'media' : e < -0.03 ? 'baja' : 'en'; }
+  function pal(e) { return e > 0.03 ? 'por encima' : e < -0.03 ? 'por debajo' : 'en línea'; }
+  var COL = { M: '#2F6FD0', F: '#CF4A86', C: '#E8702A', A: '#F6C431', N: '#B4501A' };
+  var CSS = '<style>.cv{font-size:14px;line-height:1.45}.cv-per-w{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px;font-size:12.5px;color:var(--ink-3,#777F72)}'
+    + '.cv-per{font:inherit;font-size:12.5px;font-weight:600;padding:5px 10px;border-radius:999px;border:1px solid var(--line,#D6D3C7);background:var(--surface,#fff);color:var(--ink-2,#4B534A);cursor:pointer}'
+    + '.cv-per.on{background:var(--brand,#04522B);border-color:var(--brand,#04522B);color:var(--brand-ink,#fff)}.cv-per:disabled{opacity:.6}'
+    + '.cv-eps2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0 0 8px}'
+    + '.cv-eps{border-radius:10px;padding:8px 12px;background:var(--surface-2,#ECEAE2);color:var(--ink,#1B1F1B)}.cv-eps small{display:block;font-size:12.5px;font-weight:600;opacity:.9}'
+    + '.cv-eps b{display:block;font-size:26px;line-height:1.15;font-weight:800;letter-spacing:-.01em;white-space:nowrap}.cv-eps span{display:block;font-size:12.5px;opacity:.9}'
+    + '.cv-eps.alta{color:#fff;background:#A23B1E}.cv-eps.media{color:#5A3E00;background:#F7DF9C}.cv-eps.baja{color:#fff;background:#04522B}.cv-eps.nd{opacity:.75}'
+    + '.cv-txt p{margin:0 0 6px}.cv-sub{color:var(--ink-3,#777F72);font-size:12.5px}'
     + '.cv-graf{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:10px;margin:8px 0 4px}.cv-graf figure{margin:0}.cv-graf figcaption{font-size:12px;color:var(--ink-3,#777F72);margin:0 0 2px}'
     + '.cv-graf svg{width:100%;height:auto;display:block;overflow:visible}.cv-graf text{font-family:inherit}'
     + '.cv-ley{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--ink-2,#4B534A);margin:4px 0 8px}.cv-ley span{display:inline-flex;align-items:center;gap:5px}'
-    + '.cv-ley i{display:inline-block;width:11px;height:11px;border-radius:50%}.cv-ley i.l{width:16px;height:3px;border-radius:2px}'
+    + '.cv-ley i{display:inline-block;width:11px;height:11px;border-radius:50%}.cv-ley i.l{width:16px;height:3px;border-radius:2px}.cv-ley i.t{width:16px;height:0;border-radius:0;border-top:3px dashed ' + COL.N + '}'
     + '.cv-tab{overflow-x:auto;border:1px solid var(--line,#D6D3C7);border-radius:8px}.cv-tab table{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:tabular-nums}'
     + '.cv-tab th,.cv-tab td{padding:5px 7px;border-bottom:1px solid var(--line,#ECEAE2);text-align:right;white-space:nowrap}.cv-tab th{font-weight:600;color:var(--ink-3,#777F72);background:var(--surface-2,#F4F3EE)}'
-    + '.cv-tab td:nth-child(3),.cv-tab th:nth-child(3){text-align:left;max-width:170px;overflow:hidden;text-overflow:ellipsis}.cv-tab td:first-child,.cv-tab th:first-child{text-align:left}'
+    + '.cv-tab td:nth-child(4),.cv-tab th:nth-child(4){text-align:left;max-width:160px;overflow:hidden;text-overflow:ellipsis}.cv-tab td:first-child,.cv-tab th:first-child{text-align:left}'
     + '.cv-tab tr.yo td{font-weight:700;background:rgba(246,196,49,.22)}.cv-tab tr:last-child td{border-bottom:0}'
-    + '.cv-e.alta{color:#A23B1E;font-weight:700}.cv-e.media{color:#9A6A00;font-weight:600}.cv-e.baja{color:#2E7D4F;font-weight:600}'
-    + '.cv-mas{margin-top:6px}.cv-mas summary{cursor:pointer;font-size:13px;color:var(--ink-2,#4B534A);padding:4px 0}.cv-nota{font-size:12px;color:var(--ink-3,#777F72);margin-top:8px}.cv-aviso{background:#FBF0D3;color:#6B4A00;border-radius:8px;padding:8px 10px;font-size:13px;margin:6px 0}</style>';
+    + '.cv-e.alta{color:#A23B1E;font-weight:700}.cv-e.media{color:#9A6A00;font-weight:600}.cv-e.baja{color:#2E7D4F;font-weight:600}.cv-e.nd{color:var(--ink-3,#777F72)}'
+    + '.cv-mas{margin-top:6px}.cv-mas summary{cursor:pointer;font-size:13px;color:var(--ink-2,#4B534A);padding:4px 0}'
+    + '.cv-nota{font-size:12px;color:var(--ink-3,#777F72);margin-top:8px}.cv-aviso{background:#FBF0D3;color:#6B4A00;border-radius:8px;padding:8px 10px;font-size:13px;margin:6px 0}</style>';
   if (!d || !d.ok) return CSS + '<div class="cv"><div class="cv-aviso">' + esc((d && d.error) || 'No se pudo leer la curva de invernada.') + '</div></div>';
-  var R = d.ref, A = d.actual || {}, L = d.leiloes || [], C = d.compras || [], Rs = d.resumen || {};
+  var R = d.ref, A = d.actual || {}, L = d.leiloes || [], C = d.compras || [], Rs = d.resumen || {}, N = d.nuestra || null, DIAS = d.dias || 30;
   var curva = function (s, w) { return (s === 'F' ? R.aF : R.aM) + R.beta * w; };
+  var curvaN = N ? function (w) { return N.a + N.b * w; } : null;
   var X0 = 60, X1 = 460;
   function panel(tipo) {
     var W = 380, H = 250, ml = 34, mr = 8, mt = 8, mb = 32, pw = W - ml - mr, ph = H - mt - mb;
@@ -1849,56 +1857,73 @@ function curvaHtml(d) {
     var rad = function (cab, k, mx) { return Math.min(mx, 2.2 + Math.sqrt(Math.max(1, cab || 1)) * k); };
     L.forEach(function (p) { if (p.w < X0 || p.w > X1) return; var vv = val(p.pc, p.w); if (vv < lo || vv > hi) return;
       o += '<circle cx="' + xs(p.w).toFixed(1) + '" cy="' + yv(vv).toFixed(1) + '" r="' + rad(p.cab, 0.3, 5.5).toFixed(1) + '" fill="' + COL[p.s] + '" fill-opacity=".38"><title>Remate · ' + (p.s === 'F' ? 'hembra' : 'macho') + ' · ' + nf(p.w) + ' kg · ' + (p.cab || '?') + ' cab. · ' + gs(p.pc) + '/cab · ' + gs(p.pc / p.w) + '/kg</title></circle>'; });
-    ['F', 'M'].forEach(function (s) { var pts = []; for (w = 80; w <= 450; w += 5) { var vv = val(curva(s, w), w); if (vv >= lo && vv <= hi) pts.push(xs(w).toFixed(1) + ',' + yv(vv).toFixed(1)); }
-      o += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + COL[s] + '" stroke-width="2.6" stroke-linecap="round"/>'; });
+    var linea = function (fn, color, dash, wd) { var pts = []; for (w = 80; w <= 450; w += 5) { var vv = val(fn(w), w); if (vv >= lo && vv <= hi) pts.push(xs(w).toFixed(1) + ',' + yv(vv).toFixed(1)); }
+      return '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + color + '" stroke-width="' + (wd || 2.6) + '" stroke-linecap="round"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>'; };
+    o += linea(function (w) { return curva('F', w); }, COL.F) + linea(function (w) { return curva('M', w); }, COL.M);
+    if (curvaN) o += linea(curvaN, COL.N, '7 5', 2.4);
     C.slice().reverse().forEach(function (p) { if (p.w < X0 || p.w > X1) return; var vv = val(p.pc, p.w); if (vv < lo || vv > hi) return;
-      o += '<circle cx="' + xs(p.w).toFixed(1) + '" cy="' + yv(vv).toFixed(1) + '" r="' + rad(p.cab, 0.45, 9).toFixed(1) + '" fill="' + COL.C + '" fill-opacity=".9" stroke="var(--ink,#1B1F1B)" stroke-width="1.3"><title>' + fe(p.d) + ' · ' + esc(p.prov) + ' · ' + p.cab + ' cab. · ' + nf(p.w) + ' kg · ' + gs(p.pc) + '/cab · ε ' + pct(p.eps) + '</title></circle>'; });
+      o += '<circle cx="' + xs(p.w).toFixed(1) + '" cy="' + yv(vv).toFixed(1) + '" r="' + rad(p.cab, 0.45, 9).toFixed(1) + '" fill="' + COL.C + '" fill-opacity=".9" stroke="var(--ink,#1B1F1B)" stroke-width="1.3"><title>' + fe(p.d) + ' · ' + esc(p.prov) + ' · ' + p.cab + ' cab. · ' + nf(p.w) + ' kg · ' + gs(p.pc) + '/cab · ε mercado ' + pct(p.eps) + ' · ε nuestro ' + pct(p.eps_n) + '</title></circle>'; });
     if (A.eps != null && A.w >= X0 && A.w <= X1) {
-      var ax = xs(A.w), ay = yv(val(A.pc, A.w)), cy = yv(val(A.ref, A.w)), r0 = rad(A.cab, 0.5, 11) + 2;
-      o += '<line x1="' + ax.toFixed(1) + '" x2="' + ax.toFixed(1) + '" y1="' + ay.toFixed(1) + '" y2="' + cy.toFixed(1) + '" stroke="var(--ink,#1B1F1B)" stroke-width="1.6" stroke-dasharray="4 3"/>'
-        + '<circle cx="' + ax.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="3.5" fill="' + COL[A.s] + '" stroke="var(--surface,#fff)" stroke-width="1.5"/>'
-        + '<circle cx="' + ax.toFixed(1) + '" cy="' + ay.toFixed(1) + '" r="' + r0.toFixed(1) + '" fill="' + COL.A + '" stroke="var(--ink,#1B1F1B)" stroke-width="2.4"><title>Esta compra · ' + A.cab + ' cab. · ' + nf(A.w) + ' kg · ' + gs(A.pc) + '/cab · curva ' + gs(A.ref) + '/cab · ε ' + pct(A.eps) + '</title></circle>';
+      var ax = xs(A.w), ay = yv(val(A.pc, A.w)), cy = yv(val(A.ref, A.w)), ny = A.ref_n ? yv(val(A.ref_n, A.w)) : null, r0 = rad(A.cab, 0.5, 11) + 2;
+      var y0 = Math.min(ay, cy, ny == null ? cy : ny), y1 = Math.max(ay, cy, ny == null ? cy : ny);
+      o += '<line x1="' + ax.toFixed(1) + '" x2="' + ax.toFixed(1) + '" y1="' + y0.toFixed(1) + '" y2="' + y1.toFixed(1) + '" stroke="var(--ink,#1B1F1B)" stroke-width="1.6" stroke-dasharray="4 3"/>'
+        + '<circle cx="' + ax.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="3.8" fill="' + COL[A.s] + '" stroke="var(--surface,#fff)" stroke-width="1.5"><title>Curva del mercado: ' + gs(A.ref) + '/cab</title></circle>'
+        + (ny != null ? '<circle cx="' + ax.toFixed(1) + '" cy="' + ny.toFixed(1) + '" r="3.8" fill="' + COL.N + '" stroke="var(--surface,#fff)" stroke-width="1.5"><title>Nuestra curva: ' + gs(A.ref_n) + '/cab</title></circle>' : '')
+        + '<circle cx="' + ax.toFixed(1) + '" cy="' + ay.toFixed(1) + '" r="' + r0.toFixed(1) + '" fill="' + COL.A + '" stroke="var(--ink,#1B1F1B)" stroke-width="2.4"><title>Esta compra · ' + A.cab + ' cab. · ' + nf(A.w) + ' kg · ' + gs(A.pc) + '/cab · ε mercado ' + pct(A.eps) + ' · ε nuestro ' + pct(A.eps_n) + '</title></circle>';
       var izq = ax > ml + pw * 0.62, lx = izq ? ax - r0 - 6 : ax + r0 + 6, ly = Math.max(mt + 12, Math.min(H - mb - 6, ay + 4));
-      var lab = 'esta compra ' + pct(A.eps);
-      o += '<text x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="' + (izq ? 'end' : 'start') + '" font-size="12" font-weight="700" fill="var(--ink,#1B1F1B)" stroke="var(--surface,#fff)" stroke-width="4" paint-order="stroke">' + lab + '</text>';
+      o += '<text x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="' + (izq ? 'end' : 'start') + '" font-size="12" font-weight="700" fill="var(--ink,#1B1F1B)" stroke="var(--surface,#fff)" stroke-width="4" paint-order="stroke">esta compra</text>';
     }
     return o + '</svg>';
   }
   var h = CSS + '<div class="cv">';
+  h += '<div class="cv-per-w">Período:' + (d.dias_opciones || [30, 60, 90, 180]).map(function (n) { return '<button type="button" class="cv-per' + (n === DIAS ? ' on' : '') + '" data-dias="' + n + '">' + n + ' días</button>'; }).join('') + '</div>';
   if (A.eps != null) {
-    var n = niv(A.eps), pal = A.eps > 0.03 ? 'por encima de' : A.eps < -0.03 ? 'por debajo de' : 'en línea con';
-    h += '<div class="cv-top"><div class="cv-eps ' + n + '">ε ' + pct(A.eps) + '</div><div class="cv-txt"><p><b>Esta compra está ' + pal + ' la curva.</b> ' + A.cab + ' cab. de ' + nf(A.w, 1) + ' kg a ' + gs(A.pc) + '/cab (' + gs(A.pc / A.w) + '/kg). La curva de la semana del ' + fe(R.semana) + ' para ' + (A.s === 'F' ? 'hembra' : 'macho') + ' da ' + gs(A.ref) + '/cab: '
-      + gsS(A.dif_cab) + ' por cabeza, ' + millS(A.dif_lote) + ' en el lote.</p>'
-      + (Rs.n ? '<p class="cv-sub">Nuestras compras de las últimas ' + d.semanas_grafico + ' semanas: ' + Rs.n + ' lotes, ' + nf(Rs.cab) + ' cab., ε medio ' + pct(Rs.eps_pond) + ' (ponderado por cabezas)' + (A.vs_media != null ? '; esta compra queda ' + nf(Math.abs(A.vs_media * 100), 1) + ' puntos ' + (A.vs_media >= 0 ? 'arriba' : 'abajo') + ' de ese promedio' : '') + '.' + (R.residuo ? ' Un lote de remate se aparta de la curva ±' + nf(R.residuo * 100, 1) + ' % en un caso típico.' : '') + '</p>' : '')
-      + '</div></div>';
+    h += '<div class="cv-eps2"><div class="cv-eps ' + niv(A.eps) + '"><small>ε mercado</small><b>' + pct(A.eps) + '</b><span>' + gsS(A.dif_cab) + '/cab · ' + millS(A.dif_lote) + '</span></div>'
+      + '<div class="cv-eps ' + niv(A.eps_n) + '"><small>ε nuestro · ' + DIAS + ' días</small><b>' + pct(A.eps_n) + '</b><span>' + (A.eps_n != null ? gsS(A.dif_cab_n) + '/cab · ' + millS(A.dif_lote_n) : 'sin compras nuestras en el período') + '</span></div></div>';
+    var t = '<b>' + (A.eps_n == null ? 'Esta compra está ' + pal(A.eps) + ' del mercado.' : (pal(A.eps) === pal(A.eps_n) ? 'Esta compra está ' + pal(A.eps) + ' del mercado y ' + pal(A.eps_n) + ' de lo que venimos pagando.' : 'Esta compra está ' + pal(A.eps) + ' del mercado, pero ' + pal(A.eps_n) + ' de lo que venimos pagando.')) + '</b> ';
+    t += A.cab + ' cab. de ' + nf(A.w, 1) + ' kg a ' + gs(A.pc) + '/cab (' + gs(A.pc / A.w) + '/kg). Curva del mercado (semana del ' + fe(R.semana) + ', ' + (A.s === 'F' ? 'hembra' : 'macho') + '): ' + gs(A.ref) + '/cab.';
+    if (A.eps_n != null) t += ' Nuestra curva de los últimos ' + DIAS + ' días: ' + gs(A.ref_n) + '/cab.';
+    h += '<div class="cv-txt"><p>' + t + '</p>';
+    var sub = '';
+    if (N) sub += 'Nuestra curva: ' + (N.metodo === 'recta' ? 'recta α + β·peso con ' + N.n + ' lotes de ' + (N.sexo === 'F' ? 'hembra' : 'macho') + ' (' + nf(N.cab) + ' cab.), ponderada por cabezas: α ' + mill(N.a) + ' + β ' + gs(N.b) + '/kg' : 'curva del mercado × ' + nf(N.k, 3) + ', el premio medio de nuestras ' + N.n + ' compras (' + nf(N.cab) + ' cab.; con menos de 6 lotes del mismo sexo o poca variación de peso no se estima una recta propia)') + ', con cada compra llevada al nivel de mercado de esta semana. ';
+    if (Rs.n) sub += 'ε mercado medio de nuestras compras del período: ' + pct(Rs.eps_pond) + ' (ponderado por cabezas). ';
+    if (R.residuo) sub += 'Un lote de remate se aparta de la curva ±' + nf(R.residuo * 100, 1) + ' % en un caso típico.';
+    if (sub) h += '<p class="cv-sub">' + sub + '</p>';
+    h += '</div>';
     if (A.aviso) h += '<div class="cv-aviso">' + esc(A.aviso) + '</div>';
   } else h += '<div class="cv-aviso">' + esc(A.fuera || 'Sin datos de la compra.') + '</div>';
   h += '<div class="cv-graf"><figure><figcaption>Valor por cabeza = α + β · peso (millones de ₲)</figcaption>' + panel('cab') + '</figure>'
     + '<figure><figcaption>Precio por kilo = β + α ÷ peso (miles de ₲/kg)</figcaption>' + panel('kg') + '</figure></div>';
   h += '<div class="cv-ley"><span><i style="background:' + COL.M + ';opacity:.45"></i>Remates · macho</span><span><i style="background:' + COL.F + ';opacity:.45"></i>Remates · hembra</span>'
-    + '<span><i class="l" style="background:' + COL.M + '"></i>α + β·peso macho</span><span><i class="l" style="background:' + COL.F + '"></i>α + β·peso hembra</span>'
+    + '<span><i class="l" style="background:' + COL.M + '"></i>Mercado macho</span><span><i class="l" style="background:' + COL.F + '"></i>Mercado hembra</span>'
+    + (N ? '<span><i class="t"></i>Nuestra curva (' + DIAS + ' días)</span>' : '')
     + '<span><i style="background:' + COL.C + ';border:1px solid var(--ink,#1B1F1B)"></i>Nuestras compras</span>' + (A.eps != null ? '<span><i style="background:' + COL.A + ';border:2px solid var(--ink,#1B1F1B)"></i>Esta compra</span>' : '') + '</div>';
-  var fila = function (yo, p, nom) { return '<tr' + (yo ? ' class="yo"' : '') + '><td>' + fe(p.d) + '</td><td class="cv-e ' + niv(p.eps) + '">' + pct(p.eps) + '</td><td title="' + esc(nom) + '">' + esc(nom) + '</td><td>' + p.cab + '</td><td>' + nf(p.w) + '</td><td>' + nf(p.pc) + '</td><td>' + nf(p.pc / p.w) + '</td></tr>'; };
+  var fila = function (yo, p, nom) { return '<tr' + (yo ? ' class="yo"' : '') + '><td>' + fe(p.d) + '</td><td class="cv-e ' + niv(p.eps) + '">' + pct(p.eps) + '</td><td class="cv-e ' + niv(p.eps_n) + '">' + pct(p.eps_n) + '</td><td title="' + esc(nom) + '">' + esc(nom) + '</td><td>' + p.cab + '</td><td>' + nf(p.w) + '</td><td>' + nf(p.pc) + '</td><td>' + nf(p.pc / p.w) + '</td></tr>'; };
   var filas = [];
   if (A.eps != null) filas.push(fila(true, A, 'Esta compra' + (A.prov ? ' · ' + A.prov : '')));
   C.forEach(function (p) { filas.push(fila(false, p, p.prov + (p.s === 'F' ? ' · hembra' : /TORET/i.test(p.cat) ? ' · toretón' : ''))); });
-  var cabT = '<thead><tr><th>Fecha</th><th>ε</th><th>Proveedor</th><th>Cab.</th><th>kg</th><th>₲/cab</th><th>₲/kg</th></tr></thead>';
+  var cabT = '<thead><tr><th>Fecha</th><th>ε merc.</th><th>ε nuestro</th><th>Proveedor</th><th>Cab.</th><th>kg</th><th>₲/cab</th><th>₲/kg</th></tr></thead>';
   var NV = 9;
   if (filas.length) h += '<div class="cv-tab"><table>' + cabT + '<tbody>' + filas.slice(0, NV).join('') + '</tbody></table></div>';
   if (filas.length > NV) h += '<details class="cv-mas"><summary>Ver las otras ' + (filas.length - NV) + ' compras</summary><div class="cv-tab"><table>' + cabT + '<tbody>' + filas.slice(NV).join('') + '</tbody></table></div></details>';
-  h += '<div class="cv-nota">ε = precio por cabeza ÷ (α + β × peso) − 1, con la curva de la semana de cada compra (planilla «Preços de Invernada PY», aba INDICADOR). Curva del gráfico: semana del ' + fe(R.semana) + ' (' + esc(({ 'em curso': 'en curso', 'fechada': 'cerrada' })[R.situacion] || R.situacion || '') + '): β ' + gs(R.beta) + '/kg, α macho ' + mill(R.aM) + ', α hembra ' + mill(R.aF) + '; puntos azules y rosados: lotes de remate desde el ' + fe(d.desde) + ' (tamaño por cabezas). Nuestras compras: planilla de compras (BD COMPRAS), peso sin desbaste y precio pagado al productor con IVA. Datos leídos ' + esc(String(d.leido_en || '').replace('T', ' ').slice(0, 16)) + '.</div>';
+  if (!C.length) h += '<p class="cv-sub">Sin compras nuestras en los últimos ' + DIAS + ' días.</p>';
+  h += '<div class="cv-nota">ε mercado = precio por cabeza ÷ (α + β × peso) − 1, con la curva del indicador de la semana de cada compra (planilla «Preços de Invernada PY», aba INDICADOR; semana del ' + fe(R.semana) + ', ' + esc(({ 'em curso': 'en curso', 'fechada': 'cerrada' })[R.situacion] || R.situacion || '') + ': β ' + gs(R.beta) + '/kg, α macho ' + mill(R.aM) + ', α hembra ' + mill(R.aF) + '). ε nuestro = lo mismo contra la curva de nuestras compras de los ' + DIAS + ' días anteriores a cada compra, sin ella misma. Puntos azules y rosados: lotes de remate desde el ' + fe(d.desde) + ' (tamaño por cabezas). Nuestras compras: planilla de compras (BD COMPRAS), peso sin desbaste y precio pagado al productor con IVA. Datos leídos ' + esc(String(d.leido_en || '').replace('T', ' ').slice(0, 16)) + '.</div>';
   return h + '</div>';
 }
-let curvaUlt='';
-async function pintarCurvaApp(x, r){ const card=$('curva-card'), box=$('curva-box'); if(!card) return;
+let curvaUlt='', curvaX=null, curvaR=null;
+function curvaDias(){ try{ return Number(localStorage.getItem('curva_dias'))||0; }catch(e){ return 0; } }
+async function pintarCurvaApp(x, r, dias){ const card=$('curva-card'), box=$('curva-box'); if(!card) return;
   const pc=r&&r.totales?r.totales.por_cabeza:0; if(!esAdmin()||!r.categoria||!(pc>0)||!(r.peso_promedio_kg>0)){ card.classList.add('hidden'); curvaUlt=''; return; }
-  const k=[r.id,r.categoria,r.cabezas,r.peso_promedio_kg,pc,r.fecha].join('|'); curvaUlt=k; card.classList.remove('hidden');
+  curvaX=x; curvaR=r; dias=dias||curvaDias()||undefined;
+  const k=[r.id,r.categoria,r.cabezas,r.peso_promedio_kg,pc,r.fecha,dias||''].join('|'); curvaUlt=k; card.classList.remove('hidden');
   if(!navigator.onLine){ box.innerHTML='<div class="msg">Sin señal: la curva aparece cuando vuelva la conexión.</div>'; return; }
-  box.innerHTML='<div class="msg">Leyendo la curva de invernada…</div>';
-  try{ const j=await post({tipo:'curva', id:r.id, proveedor:r.proveedor, categoria:r.categoria, cabezas:r.cabezas, peso_promedio_kg:r.peso_promedio_kg, por_cabeza:pc, fecha:r.fecha},{timeout:40000});
+  if(!box.querySelector('.cv')) box.innerHTML='<div class="msg">Leyendo la curva de invernada…</div>';
+  try{ const j=await post({tipo:'curva', id:r.id, proveedor:r.proveedor, categoria:r.categoria, cabezas:r.cabezas, peso_promedio_kg:r.peso_promedio_kg, por_cabeza:pc, fecha:r.fecha, dias:dias||null},{timeout:40000});
     if(curvaUlt!==k||doneW!==x) return; box.innerHTML=curvaHtml(j); }
   catch(e){ if(curvaUlt!==k) return; if(/desconocido/.test(e.message||'')){ card.classList.add('hidden'); return; } box.innerHTML='<div class="msg warn">No se pudo leer la curva: '+esc(e.message)+'</div>'; } }
-
+/* período del ε (30, 60, 90 o 180 días): queda guardado en este teléfono */
+$('curva-box').addEventListener('click',ev=>{ const b=ev.target.closest('.cv-per'); if(!b||b.classList.contains('on')||!curvaX) return; const n=Number(b.dataset.dias)||30;
+  try{ localStorage.setItem('curva_dias',String(n)); }catch(e){} $('curva-box').querySelectorAll('.cv-per').forEach(o=>o.disabled=true); b.textContent='…'; pintarCurvaApp(curvaX, curvaR, n); });
 /* ---------- v2.1: historial del proveedor y del intermediario al cargar la oferta (solo administradores) ---------- */
 let histTimer=null, histUlt='';
 function histTxt(t,h,lim){ if(!h) return ''; if(!h.compras) return t+' '+h.nombre+': sin compras anteriores con llegada registrada.'; const f=v=>v==null?'—':fmt(Number(v),1);
